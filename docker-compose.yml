@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+
+  auth-db:
+    image: postgres:16
+    container_name: auth-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: recetaya
+      POSTGRES_PASSWORD: recetaya123
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+
+  receta-db:
+    image: postgres:16
+    container_name: receta-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: receta_db
+      POSTGRES_USER: recetaya
+      POSTGRES_PASSWORD: recetaya123
+    ports:
+      - "5434:5432"
+    volumes:
+      - receta-db-data:/var/lib/postgresql/data
+
+  inventory-db:
+    image: postgres:16
+    container_name: inventory-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: recetaya
+      POSTGRES_PASSWORD: recetaya123
+    ports:
+      - "5435:5432"
+    volumes:
+      - inventory-db-data:/var/lib/postgresql/data
+
+  dispensing-db:
+    image: postgres:16
+    container_name: dispensing-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dispensing_db
+      POSTGRES_USER: recetaya
+      POSTGRES_PASSWORD: recetaya123
+    ports:
+      - "5436:5432"
+    volumes:
+      - dispensing-db-data:/var/lib/postgresql/data
+
+  # LocalStack: emula SQS localmente para no depender de una cuenta AWS
+  # mientras se desarrolla y prueba en el equipo.
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    restart: unless-stopped
+    environment:
+      - SERVICES=sqs
+      - DEBUG=1
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+    ports:
+      - "4566:4566"
+    volumes:
+      - localstack-data:/var/lib/localstack
+
+volumes:
+  auth-db-data:
+  receta-db-data:
+  inventory-db-data:
+  dispensing-db-data:
+  localstack-data:
