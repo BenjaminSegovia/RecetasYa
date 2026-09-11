@@ -1,3 +1,14 @@
+server:
+  port: 8085
+
 spring:
   application:
     name: notification-service
+
+# No tiene base de datos propia (solo consume eventos).
+# Cola apuntando a LocalStack mientras se desarrolla en local.
+aws:
+  sqs:
+    endpoint: http://localhost:4566
+    region: us-east-1
+    queue-name: reserva-stock-queue

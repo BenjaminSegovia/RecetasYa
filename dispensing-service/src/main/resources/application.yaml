@@ -1,3 +1,27 @@
+server:
+  port: 8084
+
 spring:
   application:
     name: dispensing-service
+  datasource:
+    url: jdbc:postgresql://localhost:5436/dispensing_db
+    username: recetaya
+    password: recetaya123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# Misma clave que en auth-service, para poder validar el JWT que llega.
+jwt:
+  secret: recetasyaduocclantoniovaras12345678
+
+# URL base para que Feign llame a inventory-service y descuente el stock
+# al momento de dispensar.
+inventory-service:
+  base-url: http://localhost:8083

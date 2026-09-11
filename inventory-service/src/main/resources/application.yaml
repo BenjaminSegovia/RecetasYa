@@ -1,3 +1,22 @@
+server:
+  port: 8083
+
 spring:
   application:
     name: inventory-service
+  datasource:
+    url: jdbc:postgresql://localhost:5435/inventory_db
+    username: recetaya
+    password: recetaya123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# Misma clave que en auth-service, para poder validar el JWT que llega.
+jwt:
+  secret: recetasyaduocclantoniovaras12345678
