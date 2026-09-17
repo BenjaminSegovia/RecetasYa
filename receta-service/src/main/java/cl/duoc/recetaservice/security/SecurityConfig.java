@@ -3,6 +3,7 @@ package cl.duoc.recetaservice.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -23,7 +24,7 @@ import java.util.List;
 
 @Configuration
 public class SecurityConfig {
-    
+
     @Value("${jwt.secret}")
     private String secret;
 
@@ -59,7 +60,6 @@ public class SecurityConfig {
         return converter;
     }
 
-
     /**
      * Configuración de seguridad HTTP.
      * - Deshabilita CSRF (no es necesario para APIs REST).
@@ -75,6 +75,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/recetas/*/estado").permitAll()
                         .requestMatchers("/recetas/reservadas/**").hasRole("FARMACEUTICO")
                         .requestMatchers("/recetas/**").hasRole("MEDICO")
                         .anyRequest().authenticated()
@@ -85,5 +86,4 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 }
