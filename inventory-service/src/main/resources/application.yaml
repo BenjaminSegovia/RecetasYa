@@ -20,3 +20,10 @@ spring:
 # Misma clave que en auth-service, para poder validar el JWT que llega.
 jwt:
   secret: recetasyaduocclantoniovaras12345678
+
+# Cola SQS apuntando a LocalStack mientras se desarrolla en local.
+aws:
+  sqs:
+    endpoint: http://localhost:4566
+    region: us-east-1
+    queue-name: reserva-stock-queue
