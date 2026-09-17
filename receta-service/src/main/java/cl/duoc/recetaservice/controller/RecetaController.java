@@ -1,5 +1,6 @@
 package cl.duoc.recetaservice.controller;
 
+import cl.duoc.recetaservice.dto.ActualizarEstadoRequest;
 import cl.duoc.recetaservice.dto.RecetaRequest;
 import cl.duoc.recetaservice.dto.RecetaResponse;
 import cl.duoc.recetaservice.service.RecetaService;
@@ -15,7 +16,7 @@ import java.util.List;
 @RequestMapping("/recetas")
 @RequiredArgsConstructor
 public class RecetaController {
-    
+
     private final RecetaService recetaService;
 
     /**
@@ -39,5 +40,16 @@ public class RecetaController {
     @GetMapping("/{id}")
     public ResponseEntity<RecetaResponse> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(recetaService.obtenerPorId(id));
+    }
+
+    /**
+     * Llamado internamente por inventory-service (no por médicos ni
+     * farmacéuticos) para actualizar el estado tras procesar la reserva.
+     */
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<RecetaResponse> actualizarEstado(@PathVariable Long id,
+                                                            @Valid @RequestBody ActualizarEstadoRequest request) {
+        RecetaResponse response = recetaService.actualizarEstado(id, request.getEstado());
+        return ResponseEntity.ok(response);
     }
 }
