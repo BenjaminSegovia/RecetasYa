@@ -20,7 +20,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class RecetaService {
-    
+
     private final RecetaRepository recetaRepository;
     private final ReservaStockPublisher reservaStockPublisher;
 
@@ -67,6 +67,16 @@ public class RecetaService {
         return toResponse(receta);
     }
 
+    public RecetaResponse actualizarEstado(Long id, EstadoReceta nuevoEstado) {
+        Receta receta = recetaRepository.findById(id)
+                .orElseThrow(() -> new RecetaNotFoundException(id));
+
+        receta.setEstado(nuevoEstado);
+        receta = recetaRepository.save(receta);
+
+        return toResponse(receta);
+    }
+
     private String obtenerUsernameActual() {
         Jwt jwt = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return jwt.getSubject();
@@ -87,5 +97,4 @@ public class RecetaService {
                 .fechaCreacion(receta.getFechaCreacion())
                 .build();
     }
-
 }
