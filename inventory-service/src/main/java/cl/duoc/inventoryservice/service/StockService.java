@@ -1,6 +1,8 @@
 package cl.duoc.inventoryservice.service;
 
 import cl.duoc.inventoryservice.dto.DetalleMedicamentoMensaje;
+import cl.duoc.inventoryservice.dto.StockRequest;
+import cl.duoc.inventoryservice.dto.StockResponse;
 import cl.duoc.inventoryservice.model.StockMedicamento;
 import cl.duoc.inventoryservice.repository.StockMedicamentoRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +16,32 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class StockService {
-    
-        private final StockMedicamentoRepository stockRepository;
+
+    private final StockMedicamentoRepository stockRepository;
+
+    /**
+     * Crea el stock de un medicamento en una sucursal, o actualiza la
+     * cantidad si ya existe una fila para ese medicamento+sucursal.
+     */
+    public StockResponse crearOActualizarStock(StockRequest request) {
+        StockMedicamento stock = stockRepository
+                .findByNombreMedicamentoAndSucursal(request.getNombreMedicamento(), request.getSucursal())
+                .orElse(StockMedicamento.builder()
+                        .nombreMedicamento(request.getNombreMedicamento())
+                        .sucursal(request.getSucursal())
+                        .build());
+
+        stock.setCantidadDisponible(request.getCantidadDisponible());
+        stock = stockRepository.save(stock);
+
+        return toResponse(stock);
+    }
+
+    public List<StockResponse> listarTodo() {
+        return stockRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
+    }
 
     /**
      * Verifica que haya stock suficiente de TODOS los medicamentos en la
@@ -55,5 +81,12 @@ public class StockService {
         log.info("Stock reservado correctamente para sucursal {}", sucursal);
     }
 
-
+    private StockResponse toResponse(StockMedicamento stock) {
+        return StockResponse.builder()
+                .id(stock.getId())
+                .nombreMedicamento(stock.getNombreMedicamento())
+                .sucursal(stock.getSucursal())
+                .cantidadDisponible(stock.getCantidadDisponible())
+                .build();
+    }
 }
