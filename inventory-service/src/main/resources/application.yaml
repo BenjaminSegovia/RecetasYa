@@ -27,3 +27,7 @@ aws:
     endpoint: http://localhost:4566
     region: us-east-1
     queue-name: reserva-stock-queue
+
+# URL de receta-service, para avisarle cuando una receta queda reservada.
+receta-service:
+  base-url: http://localhost:8082
