@@ -27,4 +27,22 @@ public class StockController {
         return ResponseEntity.ok(stockService.listarTodo());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<StockResponse> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(stockService.buscarPorId(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<StockResponse> actualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody StockRequest request) {
+        return ResponseEntity.ok(stockService.actualizar(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        stockService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }
