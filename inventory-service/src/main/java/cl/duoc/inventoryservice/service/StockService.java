@@ -3,6 +3,7 @@ package cl.duoc.inventoryservice.service;
 import cl.duoc.inventoryservice.dto.DetalleMedicamentoMensaje;
 import cl.duoc.inventoryservice.dto.StockRequest;
 import cl.duoc.inventoryservice.dto.StockResponse;
+import cl.duoc.inventoryservice.exception.StockNotFoundException;
 import cl.duoc.inventoryservice.model.StockMedicamento;
 import cl.duoc.inventoryservice.repository.StockMedicamentoRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,30 @@ public class StockService {
         return stockRepository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public StockResponse buscarPorId(Long id) {
+        return stockRepository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new StockNotFoundException(id));
+    }
+
+    public StockResponse actualizar(Long id, StockRequest request) {
+        StockMedicamento stock = stockRepository.findById(id)
+                .orElseThrow(() -> new StockNotFoundException(id));
+
+        stock.setNombreMedicamento(request.getNombreMedicamento());
+        stock.setSucursal(request.getSucursal());
+        stock.setCantidadDisponible(request.getCantidadDisponible());
+
+        return toResponse(stockRepository.save(stock));
+    }
+
+    public void eliminar(Long id) {
+        if (!stockRepository.existsById(id)) {
+            throw new StockNotFoundException(id);
+        }
+        stockRepository.deleteById(id);
     }
 
     /**
