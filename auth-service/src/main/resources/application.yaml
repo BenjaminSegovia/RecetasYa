@@ -5,9 +5,9 @@ spring:
   application:
     name: auth-service
   datasource:
-    url: jdbc:postgresql://localhost:5433/auth_db
-    username: recetaya
-    password: recetaya123
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/auth_db}
+    username: ${SPRING_DATASOURCE_USERNAME:recetaya}
+    password: ${SPRING_DATASOURCE_PASSWORD:recetaya123}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -17,9 +17,6 @@ spring:
       hibernate:
         format_sql: true
 
-# Clave usada para FIRMAR los JWT. Debe ser EXACTAMENTE la misma
-# en receta-service, inventory-service y dispensing-service (ahí se usa
-# para VALIDAR el token), o la verificación va a fallar.
 jwt:
-  secret: recetasyaduocclantoniovaras12345678
+  secret: ${JWT_SECRET:recetasyaduocclantoniovaras12345678}
   expiration-ms: 3600000
