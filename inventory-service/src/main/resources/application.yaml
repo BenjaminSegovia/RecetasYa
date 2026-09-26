@@ -5,9 +5,9 @@ spring:
   application:
     name: inventory-service
   datasource:
-    url: jdbc:postgresql://localhost:5435/inventory_db
-    username: recetaya
-    password: recetaya123
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5435/inventory_db}
+    username: ${SPRING_DATASOURCE_USERNAME:recetaya}
+    password: ${SPRING_DATASOURCE_PASSWORD:recetaya123}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -19,15 +19,15 @@ spring:
 
 # Misma clave que en auth-service, para poder validar el JWT que llega.
 jwt:
-  secret: recetasyaduocclantoniovaras12345678
+  secret: ${JWT_SECRET:recetasyaduocclantoniovaras12345678}
 
 # Cola SQS apuntando a LocalStack mientras se desarrolla en local.
 aws:
   sqs:
-    endpoint: http://localhost:4566
+    endpoint: ${AWS_SQS_ENDPOINT:http://localhost:4566}
     region: us-east-1
     queue-name: reserva-stock-queue
 
 # URL de receta-service, para avisarle cuando una receta queda reservada.
 receta-service:
-  base-url: http://localhost:8082
+  base-url: ${RECETA_SERVICE_URL:http://localhost:8082}
