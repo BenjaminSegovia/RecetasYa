@@ -5,9 +5,9 @@ spring:
   application:
     name: dispensing-service
   datasource:
-    url: jdbc:postgresql://localhost:5436/dispensing_db
-    username: recetaya
-    password: recetaya123
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5436/dispensing_db}
+    username: ${SPRING_DATASOURCE_USERNAME:recetaya}
+    password: ${SPRING_DATASOURCE_PASSWORD:recetaya123}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -19,13 +19,12 @@ spring:
 
 # Misma clave que en auth-service, para poder validar el JWT que llega.
 jwt:
-  secret: recetasyaduocclantoniovaras12345678
+  secret: ${JWT_SECRET:recetasyaduocclantoniovaras12345678}
 
-# URL base para que Feign llame a inventory-service y descuente el stock
-# al momento de dispensar.
+# URL base para llamar a inventory-service.
 inventory-service:
-  base-url: http://localhost:8083
-  
-# URL base para que Feign llame a receta-service y valide la receta
+  base-url: ${INVENTORY_SERVICE_URL:http://localhost:8083}
+
+# URL base para llamar a receta-service y validar la receta antes de dispensar.
 receta-service:
-  base-url: http://localhost:8082
+  base-url: ${RECETA_SERVICE_URL:http://localhost:8082}
