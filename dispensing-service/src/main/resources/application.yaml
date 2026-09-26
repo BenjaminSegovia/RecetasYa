@@ -25,3 +25,7 @@ jwt:
 # al momento de dispensar.
 inventory-service:
   base-url: http://localhost:8083
+  
+# URL base para que Feign llame a receta-service y valide la receta
+  receta-service:
+  base-url: http://localhost:8082
