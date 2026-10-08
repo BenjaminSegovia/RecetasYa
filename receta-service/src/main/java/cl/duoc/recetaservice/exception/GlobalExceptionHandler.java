@@ -32,6 +32,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Error de validacion en los datos enviados", request, fieldErrors);
     }
 
+    @ExceptionHandler(RecetaNoModificableException.class)
+    public ResponseEntity<ErrorResponse> handleRecetaNoModificable(RecetaNoModificableException ex,
+                                                                   HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleBodyInvalido(HttpMessageNotReadableException ex,
                                                             HttpServletRequest request) {

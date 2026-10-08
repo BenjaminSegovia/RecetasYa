@@ -3,8 +3,10 @@ package cl.duoc.recetaservice.service;
 import cl.duoc.recetaservice.dto.DetalleMedicamentoDto;
 import cl.duoc.recetaservice.dto.RecetaRequest;
 import cl.duoc.recetaservice.dto.RecetaResponse;
+import cl.duoc.recetaservice.dto.RecetaUpdateRequest;
 import cl.duoc.recetaservice.dto.ReservaStockMessage;
 import cl.duoc.recetaservice.exception.RecetaNotFoundException;
+import cl.duoc.recetaservice.exception.RecetaNoModificableException;
 import cl.duoc.recetaservice.model.DetalleMedicamento;
 import cl.duoc.recetaservice.model.EstadoReceta;
 import cl.duoc.recetaservice.model.Receta;
@@ -55,6 +57,15 @@ public class RecetaService {
         return toResponse(receta);
     }
 
+    public List<RecetaResponse> listar(EstadoReceta estado) {
+        List<Receta> recetas = estado != null
+                ? recetaRepository.findByEstado(estado)
+                : recetaRepository.findAll();
+        return recetas.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public List<RecetaResponse> listarReservadas() {
         return recetaRepository.findByEstado(EstadoReceta.RESERVADA).stream()
                 .map(this::toResponse)
@@ -75,6 +86,38 @@ public class RecetaService {
         receta = recetaRepository.save(receta);
 
         return toResponse(receta);
+    }
+
+    public RecetaResponse actualizarReceta(Long id, RecetaUpdateRequest request) {
+        Receta receta = recetaRepository.findById(id)
+                .orElseThrow(() -> new RecetaNotFoundException(id));
+
+        validarEstadoModificable(receta);
+
+        receta.setPacienteNombre(request.getPacienteNombre());
+        receta.setSucursal(request.getSucursal());
+        receta.setMedicamentos(request.getMedicamentos().stream()
+                .map(m -> new DetalleMedicamento(m.getNombreMedicamento(), m.getCantidad()))
+                .toList());
+
+        receta = recetaRepository.save(receta);
+        return toResponse(receta);
+    }
+
+    public void eliminarReceta(Long id) {
+        Receta receta = recetaRepository.findById(id)
+                .orElseThrow(() -> new RecetaNotFoundException(id));
+
+        validarEstadoModificable(receta);
+
+        recetaRepository.delete(receta);
+    }
+
+    private void validarEstadoModificable(Receta receta) {
+        EstadoReceta estado = receta.getEstado();
+        if (estado != EstadoReceta.ACEPTADA_PENDIENTE_RESERVA && estado != EstadoReceta.SIN_STOCK) {
+            throw new RecetaNoModificableException(receta.getId(), estado);
+        }
     }
 
     private String obtenerUsernameActual() {
