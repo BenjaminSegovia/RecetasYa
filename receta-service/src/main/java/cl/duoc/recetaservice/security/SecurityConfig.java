@@ -59,8 +59,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/recetas/*/estado").permitAll()
-                        .requestMatchers("/recetas/reservadas/**").hasRole("FARMACEUTICO")
+                        .requestMatchers(HttpMethod.GET, "/recetas/reservadas/**").hasRole("FARMACEUTICO")
+                        .requestMatchers(HttpMethod.GET, "/recetas/reservadas").hasRole("FARMACEUTICO")
+                        .requestMatchers(HttpMethod.GET, "/recetas").hasAnyRole("MEDICO", "FARMACEUTICO")
                         .requestMatchers(HttpMethod.GET, "/recetas/*").hasAnyRole("MEDICO", "FARMACEUTICO")
+                        .requestMatchers(HttpMethod.PUT, "/recetas/*").hasRole("MEDICO")
+                        .requestMatchers(HttpMethod.DELETE, "/recetas/*").hasRole("MEDICO")
                         .requestMatchers("/recetas/**").hasRole("MEDICO")
                         .anyRequest().authenticated()
                 )
