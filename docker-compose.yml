@@ -155,6 +155,27 @@ services:
     ports:
       - "8085:8085"
 
+  # Punto de entrada único: los clientes solo conocen el puerto 8080.
+  # Enruta /api/<servicio>/** al servicio correspondiente.
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    depends_on:
+      - auth-service
+      - receta-service
+      - inventory-service
+      - dispensing-service
+      - notification-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      RECETA_SERVICE_URL: http://receta-service:8082
+      INVENTORY_SERVICE_URL: http://inventory-service:8083
+      DISPENSING_SERVICE_URL: http://dispensing-service:8084
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+    ports:
+      - "8080:8080"
+
   # SMTP de desarrollo: captura los emails que envía notification-service
   # y los muestra en la interfaz web http://localhost:8025.
   mailpit:
