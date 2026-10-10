@@ -62,6 +62,11 @@ services:
       - SERVICES=sqs
       - DEBUG=1
       - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+    # Crea las colas al arrancar, para no tener que crearlas a mano.
+    command: >
+      sh -c "awslocal sqs create-queue --queue-name reserva-stock-queue &&
+             awslocal sqs create-queue --queue-name notificacion-queue &&
+             sleep infinity"
     ports:
       - "4566:4566"
     volumes:
@@ -132,6 +137,33 @@ services:
       INVENTORY_SERVICE_URL: http://inventory-service:8083
     ports:
       - "8084:8084"
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    depends_on:
+      - localstack
+      - auth-service
+      - inventory-service
+      - mailpit
+    environment:
+      AWS_SQS_ENDPOINT: http://localstack:4566
+      AUTH_SERVICE_URL: http://auth-service:8081
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+    ports:
+      - "8085:8085"
+
+  # SMTP de desarrollo: captura los emails que envía notification-service
+  # y los muestra en la interfaz web http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Interfaz web
 
 volumes:
   auth-db-data:

@@ -4,11 +4,28 @@ server:
 spring:
   application:
     name: notification-service
+  # SMTP local para desarrollo: Mailpit captura los emails y los muestra
+  # en http://localhost:8025 (no se envía nada a internet).
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
 
 # No tiene base de datos propia (solo consume eventos).
 # Cola apuntando a LocalStack mientras se desarrolla en local.
 aws:
   sqs:
-    endpoint: http://localhost:4566
+    endpoint: ${AWS_SQS_ENDPOINT:http://localhost:4566}
     region: us-east-1
-    queue-name: reserva-stock-queue
+    # Cola que inventory-service usa para avisar el estado de las recetas.
+    notificacion-queue-name: notificacion-queue
+
+# URL de auth-service, para buscar el email del médico a notificar.
+auth-service:
+  base-url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+# Remitente de los emails de notificación.
+notification:
+  from: ${NOTIFICATION_FROM:notificaciones@recetasya.cl}
