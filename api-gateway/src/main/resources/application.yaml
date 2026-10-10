@@ -6,40 +6,46 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      # Los clientes solo hablan con el puerto 8080. Cada ruta quita el
-      # prefijo /api/<servicio> (StripPrefix=2) y reenvía al servicio real.
-      routes:
-        - id: auth-service
-          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - StripPrefix=2
+      # El flavor webmvc de Spring Cloud Gateway configura las rutas bajo
+      # spring.cloud.gateway.server.webmvc.* (el prefijo spring.cloud.gateway.*
+      # es del flavor reactivo y aquí se ignora en silencio).
+      server:
+        webmvc:
+          # Los clientes solo hablan con el puerto 8080. Cada ruta quita solo el
+          # prefijo /api (StripPrefix=2) y reenvía al servicio real conservando
+          # el resto del path (p. ej. /api/auth/login → /auth/login).
+          routes:
+            - id: auth-service
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                - StripPrefix=2
 
-        - id: receta-service
-          uri: ${RECETA_SERVICE_URL:http://localhost:8082}
-          predicates:
-            - Path=/api/recetas/**
-          filters:
-            - StripPrefix=2
+            - id: receta-service
+              uri: ${RECETA_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/recetas/**
+              filters:
+                - StripPrefix=2
 
-        - id: inventory-service
-          uri: ${INVENTORY_SERVICE_URL:http://localhost:8083}
-          predicates:
-            - Path=/api/inventario/**
-          filters:
-            - StripPrefix=2
+            - id: inventory-service
+              uri: ${INVENTORY_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/inventario/**
+              filters:
+                - StripPrefix=2
 
-        - id: dispensing-service
-          uri: ${DISPENSING_SERVICE_URL:http://localhost:8084}
-          predicates:
-            - Path=/api/dispensaciones/**
-          filters:
-            - StripPrefix=2
+            - id: dispensing-service
+              uri: ${DISPENSING_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/dispensaciones/**
+              filters:
+                - StripPrefix=2
 
-        - id: notification-service
-          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
-          predicates:
-            - Path=/api/notificaciones/**
-          filters:
-            - StripPrefix=2
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/notificaciones/**
+              filters:
+                - StripPrefix=2
