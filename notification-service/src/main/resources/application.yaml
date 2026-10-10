@@ -26,6 +26,11 @@ aws:
 auth-service:
   base-url: ${AUTH_SERVICE_URL:http://localhost:8081}
 
+# Clave compartida para los endpoints internos entre servicios
+# (GET /internal/usuarios/{username} de auth-service).
+internal:
+  api-key: ${INTERNAL_API_KEY}
+
 # Remitente de los emails de notificación.
 notification:
   from: ${NOTIFICATION_FROM:notificaciones@recetasya.cl}

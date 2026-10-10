@@ -453,5 +453,3 @@ Paquete base: `cl.duoc.<nombre-servicio>`.
 3. **No hay semillas de datos** (usuarios ni stock iniciales): hay que registrarlos a mano.
 4. **`INVENTORY_SERVICE_URL` está configurado en dispensing-service pero no se usa** en el código;
    hoy el stock no se vuelve a descontar ni conciliar al dispensar.
-5. **Faltan tests**: solo existe el test de arranque (`*ApplicationTests`) de cada servicio.
-   `notification-service` aún no tiene tests de su listener ni de su servicio de email.

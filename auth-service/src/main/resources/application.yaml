@@ -20,3 +20,8 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration-ms: 3600000
+
+# Clave compartida para los endpoints internos entre servicios
+# (GET /internal/usuarios/{username}).
+internal:
+  api-key: ${INTERNAL_API_KEY}

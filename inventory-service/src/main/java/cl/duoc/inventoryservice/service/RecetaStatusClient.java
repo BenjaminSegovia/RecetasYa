@@ -12,11 +12,14 @@ import java.util.Map;
 public class RecetaStatusClient {
     
     private final RestClient restClient;
+    private final String internalApiKey;
 
-    public RecetaStatusClient(@Value("${receta-service.base-url}") String baseUrl) {
+    public RecetaStatusClient(@Value("${receta-service.base-url}") String baseUrl,
+                              @Value("${internal.api-key}") String internalApiKey) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
+        this.internalApiKey = internalApiKey;
     }
 
     /**
@@ -29,6 +32,7 @@ public class RecetaStatusClient {
         try {
             RecetaStatusResponse response = restClient.patch()
                     .uri("/recetas/{id}/estado", recetaId)
+                    .header("X-Internal-Api-Key", internalApiKey)
                     .body(Map.of("estado", nuevoEstado))
                     .retrieve()
                     .body(RecetaStatusResponse.class);

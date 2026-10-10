@@ -20,6 +20,11 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
 
+# Clave compartida para los endpoints internos entre servicios
+# (PATCH /recetas/{id}/estado).
+internal:
+  api-key: ${INTERNAL_API_KEY}
+
 aws:
   sqs:
     endpoint: ${AWS_SQS_ENDPOINT:http://localhost:4566}

@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.core.convert.converter.Converter;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -52,12 +53,15 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                            Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter) throws Exception {
+                                            Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter,
+                                            @Value("${internal.api-key}") String internalApiKey) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
+                        // Endpoint interno protegido con X-Internal-Api-Key
+                        // (lo validan inventory-service y dispensing-service).
                         .requestMatchers(HttpMethod.PATCH, "/recetas/*/estado").permitAll()
                         .requestMatchers(HttpMethod.GET, "/recetas/reservadas/**").hasRole("FARMACEUTICO")
                         .requestMatchers(HttpMethod.GET, "/recetas/reservadas").hasRole("FARMACEUTICO")
@@ -68,6 +72,10 @@ public class SecurityConfig {
                         .requestMatchers("/recetas/**").hasRole("MEDICO")
                         .anyRequest().authenticated()
                 )
+                // El filtro corre antes de la autorización: si no llega la
+                // cabecera X-Internal-Api-Key, responde 401 y corta.
+                .addFilterBefore(new InternalApiKeyFilter(internalApiKey),
+                        UsernamePasswordAuthenticationFilter.class)
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
                 );

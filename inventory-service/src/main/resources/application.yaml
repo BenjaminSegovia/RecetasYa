@@ -34,3 +34,8 @@ aws:
 # URL de receta-service, para avisarle cuando una receta queda reservada.
 receta-service:
   base-url: ${RECETA_SERVICE_URL:http://localhost:8082}
+
+# Clave compartida para los endpoints internos entre servicios
+# (PATCH /recetas/{id}/estado).
+internal:
+  api-key: ${INTERNAL_API_KEY}
