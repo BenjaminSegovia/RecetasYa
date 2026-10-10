@@ -85,7 +85,8 @@ para que cada parte del sistema evolucione de forma independiente.
 
 Infraestructura auxiliar:
 
-- **4 bases PostgreSQL** (una por servicio → *database per service*).
+- **4 bases PostgreSQL** (una por cada servicio con persistencia → *database per service*;
+  `notification-service` es un worker sin base de datos).
 - **LocalStack** (puerto 4566): emula AWS SQS en local para no depender de una cuenta AWS. Las dos colas se crean automáticamente al arrancar.
 - **Mailpit** (SMTP 1025 / web 8025): captura los emails de `notification-service` en local, sin enviar nada a internet.
 
@@ -97,13 +98,13 @@ Dos roles, definidos en `auth-service` (`Role.java`) y aplicados en el `Security
 
 | Rol | Puede |
 |---|---|
-| **MEDICO** | Crear recetas (`POST /recetas`), ver recetas por id |
-| **FARMACEUTICO** | Ver recetas reservadas (`GET /recetas/reservadas`), dispensar (`POST /dispensaciones`) |
+| **MEDICO** | Crear recetas (`POST /recetas`), listarlas (`GET /recetas`), verlas por id, editarlas (`PUT`) y eliminarlas (`DELETE`) — solo si aún no están reservadas ni dispensadas |
+| **FARMACEUTICO** | Ver recetas reservadas (`GET /recetas/reservadas`), consultar recetas (`GET /recetas`, `GET /recetas/{id}`) y dispensar (`POST /dispensaciones`) |
 | Cualquiera autenticado | Consultar/CRUD de inventario (`/inventario/**`) |
 
 > Todas las rutas exigen `Authorization: Bearer <token>` (excepto `/auth/**` y `/actuator/**`).
-> El endpoint `PATCH /recetas/{id}/estado` está **abierto** porque lo usan los servicios entre sí
-> (es un punto a endurecer: debería autenticarse con un token de servicio).
+> Los endpoints **internos** (`PATCH /recetas/{id}/estado` y `GET /internal/usuarios/{username}`)
+> no usan JWT: exigen la cabecera `X-Internal-Api-Key` con la clave compartida entre servicios.
 
 ---
 
@@ -224,8 +225,9 @@ sequenceDiagram
 ### api-gateway — `:8080` (punto de entrada único)
 
 No expone lógica propia: solo enruta `/api/<servicio>/**` al servicio correspondiente,
-quitando el prefijo con `StripPrefix=2` y reenviando el header `Authorization` tal cual
-(cada resource server sigue validando su propio JWT).
+quitando **solo** el prefijo `/api` con `StripPrefix=1` y reenviando el header
+`Authorization` tal cual (cada resource server sigue validando su propio JWT).
+Ejemplo: `/api/auth/login` llega a auth-service como `/auth/login`.
 
 | Prefijo | Se enruta a |
 |---|---|
@@ -242,8 +244,8 @@ quitando el prefijo con `StripPrefix=2` y reenviando el header `Authorization` t
 | POST | `/auth/register` | Crea usuario (username, password, nombreCompleto, email, role) y retorna JWT |
 | POST | `/auth/login` | Valida credenciales y retorna JWT |
 
-Los dos endpoints internos siguientes exigen la cabecera `X-Internal-Api-Key`
-(igual que el `PATCH` de receta-service):
+El endpoint interno siguiente exige la cabecera `X-Internal-Api-Key`
+(igual que el `PATCH /recetas/{id}/estado` de receta-service):
 
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -254,8 +256,11 @@ Los dos endpoints internos siguientes exigen la cabecera `X-Internal-Api-Key`
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
 | POST | `/recetas` | MEDICO | Crea receta y dispara la reserva de stock |
+| GET | `/recetas` | MEDICO / FARMACEUTICO | Lista recetas; filtro opcional por estado (`?estado=RESERVADA`) |
 | GET | `/recetas/reservadas` | FARMACEUTICO | Lista recetas con stock reservado |
 | GET | `/recetas/{id}` | MEDICO / FARMACEUTICO | Detalle de receta |
+| PUT | `/recetas/{id}` | MEDICO | Edita receta (solo si no está reservada ni dispensada) |
+| DELETE | `/recetas/{id}` | MEDICO | Elimina receta (solo si no está reservada ni dispensada) |
 | PATCH | `/recetas/{id}/estado` | interno | Cambia el estado; exige `X-Internal-Api-Key` (lo usan inventory y dispensing) |
 
 ### inventory-service — `:8083`
