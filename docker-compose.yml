@@ -86,6 +86,8 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       # Perfil de datos semilla (usuarios de prueba); quitar en producción.
       SPRING_PROFILES_ACTIVE: seed
+      # Contraseña de los usuarios semilla (medico1 / farma1).
+      SEED_PASSWORD: ${SEED_PASSWORD}
     ports:
       - "8081:8081"
 

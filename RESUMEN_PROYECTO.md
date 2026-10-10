@@ -328,6 +328,7 @@ POSTGRES_USER=recetaya
 POSTGRES_PASSWORD=tu_password_aqui
 JWT_SECRET=tu_secreto_largo_y_aleatorio_aqui
 INTERNAL_API_KEY=clave_interna_para_endpoints_de_servicio
+SEED_PASSWORD=contrasena_de_los_usuarios_de_prueba
 ```
 
 > Este archivo está en `.gitignore` — cada persona que clone el proyecto
@@ -375,19 +376,20 @@ Todos los ejemplos pasan por el gateway (`:8080`) bajo el prefijo `/api/<servici
 > **Credenciales semilla** (si levantaste con el perfil `seed`, que es el
 > default en el compose): ya existen dos usuarios creados, así que puedes
 > saltarte los pasos 1 y 2 e ir directo a iniciar sesión con
-> `medico1 / secret123` (médico, con email `medico1@recetasya.cl`) o
-> `farma1 / secret123` (farmacéutico).
+> `medico1` (médico, con email `medico1@recetasya.cl`) o `farma1`
+> (farmacéutico). La contraseña de ambos es la que definiste en
+> `SEED_PASSWORD` dentro de `.env`.
 
 ```bash
 # 1. Registrar un médico (con email, para que pueda recibir notificaciones)
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"medico1","password":"secret123","nombreCompleto":"Dr. Prueba","email":"medico1@correo.cl","role":"MEDICO"}'
+  -d '{"username":"medico1","password":"<tu_password>","nombreCompleto":"Dr. Prueba","email":"medico1@correo.cl","role":"MEDICO"}'
 
 # 2. Registrar un farmacéutico
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"farma1","password":"secret123","nombreCompleto":"Farma Prueba","role":"FARMACEUTICO"}'
+  -d '{"username":"farma1","password":"<tu_password>","nombreCompleto":"Farma Prueba","role":"FARMACEUTICO"}'
 
 # 3. Cargar stock (con el JWT de cualquier usuario)
 curl -X POST http://localhost:8080/api/inventario \
@@ -447,20 +449,20 @@ Paquete base: `cl.duoc.<nombre-servicio>`.
   En local los emails se capturan en **Mailpit** (`http://localhost:8025`).
 - **API Gateway** (`:8080`): punto de entrada único; enruta `/api/<servicio>/**`
   a cada servicio, así los clientes no necesitan conocer los puertos internos.
-- **Secretos externalizados**: `JWT_SECRET`, credenciales de PostgreSQL y el token
-  de LocalStack salen de variables de entorno (plantilla en `.env.example`).
+- **Secretos externalizados**: `JWT_SECRET`, credenciales de PostgreSQL, el token
+  de LocalStack, la clave interna y la contraseña de las semillas salen de
+  variables de entorno (plantilla en `.env.example`).
 - Las colas SQS se crean automáticamente al arrancar LocalStack.
 - **Endpoints internos protegidos**: `PATCH /recetas/{id}/estado` y
   `GET /internal/usuarios/{username}` exigen la cabecera `X-Internal-Api-Key`
   (`INTERNAL_API_KEY`); los servicios clientes la envían.
 - **Datos semilla** con perfil `seed`: `medico1` (con email) y `farma1` en
-  auth-service; stock de prueba en inventory-service.
+  auth-service (contraseña desde `SEED_PASSWORD`); stock de prueba en
+  inventory-service.
 - **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 29 tests de la
   lógica de negocio.
 - 5 servicios + gateway + Mailpit contenedorizados con `docker compose up --build`.
 
 **Pendiente / puntos a mejorar:**
 
-1. **No hay frontend.** Hoy todo se consume vía API REST (pendiente: aún no se hace).
-2. **Credenciales de las semillas hardcodeadas** (`secret123`): sirven para desarrollo;
-   en producción deberían venir de variables de entorno.
+1. **No hay frontend.** Hoy todo se consume vía API REST.

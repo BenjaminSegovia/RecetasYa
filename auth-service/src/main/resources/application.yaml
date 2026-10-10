@@ -25,3 +25,8 @@ jwt:
 # (GET /internal/usuarios/{username}).
 internal:
   api-key: ${INTERNAL_API_KEY}
+
+# Contraseña de los usuarios de prueba (medico1 / farma1).
+# Solo se usa con el perfil "seed"; si no está activo, no se lee.
+seed:
+  password: ${SEED_PASSWORD}
