@@ -22,7 +22,6 @@ para que cada parte del sistema evolucione de forma independiente.
 ## 2. Stack tecnológico
 
 | Capa | Tecnología |
-
 |---|---|
 | Lenguaje | Java 21 |
 | Framework | Spring Boot 4 (Spring Web MVC, Spring Security, Spring Data JPA) |
@@ -417,7 +416,74 @@ en Mailpit y lo ves en http://localhost:8025.
 
 ---
 
-## 9. Convenciones de código
+## 9. Comandos Maven
+
+No hay un pom raíz: cada servicio es un proyecto Maven independiente con su
+**propio wrapper** (`./mvnw`). Los comandos se ejecutan desde la carpeta del
+servicio:
+
+```bash
+cd auth-service   # o receta-service, inventory-service, dispensing-service, notification-service
+
+./mvnw clean compile    # compilar
+./mvnw clean test       # compilar + ejecutar los tests
+./mvnw clean package    # compilar + tests + generar el .jar ejecutable
+```
+
+> En Windows (PowerShell / CMD) el wrapper es `.\mvnw.cmd` en lugar de `./mvnw`.
+
+El `.jar` ejecutable queda en `target/` con el nombre
+`<servicio>-0.0.1-SNAPSHOT.jar`:
+
+```bash
+java -jar target/auth-service-0.0.1-SNAPSHOT.jar
+```
+
+Notas:
+
+- **`api-gateway` no tiene wrapper propio**: usa el de cualquier otro servicio
+  apuntando a su pom, p. ej.
+  `cd notification-service && ./mvnw -f ../api-gateway/pom.xml clean package`
+  → genera `api-gateway/target/api-gateway-0.0.1-SNAPSHOT.jar`.
+- Los tests de arranque (`contextLoads`) de auth/receta/inventory/dispensing
+  necesitan las BDs levantadas y las variables del `.env`. Para correr **solo
+  los tests unitarios** sin infraestructura: `./mvnw test -Dtest=*Test`.
+- `notification-service` pasa `./mvnw clean package` completo sin necesitar
+  infraestructura (sus tests no requieren LocalStack ni Mailpit).
+
+---
+
+## 10. Ramas de Git
+
+Repositorio: [github.com/BenjaminSegovia/RecetasYa](https://github.com/BenjaminSegovia/RecetasYa).
+
+| Rama | Rol |
+|---|---|
+| `main` | Rama estable; es la rama por defecto del repositorio en GitHub. |
+| `develop` | Rama de integración: aquí se acumulan los cambios listos para probar antes de pasar a `main`. |
+| `feature/*` | Ramas de funcionalidad: se crean desde `develop` y se integran de vuelta con un PR. |
+
+Ramas existentes:
+
+```text
+main
+develop
+feature/receta-crud
+feature/receta-manejo-errores
+```
+
+Flujo básico:
+
+```bash
+git checkout develop            # trabajar sobre la rama de integración
+git checkout -b feature/x       # crear una rama de feature nueva
+git push -u origin feature/x    # publicarla en GitHub
+git checkout develop            # integrar (merge o PR)
+```
+
+---
+
+## 11. Convenciones de código
 
 Cada servicio sigue la misma estructura por capas:
 
@@ -435,9 +501,26 @@ Cada servicio sigue la misma estructura por capas:
 
 Paquete base: `cl.duoc.<nombre-servicio>`.
 
+### Relaciones JPA (modelo de datos)
+
+Por *database per service*, cada servicio tiene sus propias entidades y **no hay
+relaciones JPA entre servicios**. Dentro de cada servicio las tablas son simples
+(`Usuario`, `StockMedicamento`, `Dispensacion` no tienen relaciones); la única
+relación entre tablas del proyecto está en **receta-service**:
+
+| Relación | Mapeo |
+|---|---|
+| `Receta` → `DetalleMedicamento` (1 a N) | `@ElementCollection` sobre `List<DetalleMedicamento>` + `@CollectionTable(name = "receta_medicamentos", joinColumns = @JoinColumn(name = "receta_id"))` |
+
+`DetalleMedicamento` es `@Embeddable`: es un valor embebido de la receta, **no
+una entidad** (no tiene id propio ni tabla de entidad), por eso se usa
+`@ElementCollection` en lugar de `@OneToMany` / `@ManyToOne`, que se reservan
+para relaciones entidad ↔ entidad. El `@JoinColumn` define la columna foránea
+(`receta_id`) dentro de la tabla de colección `receta_medicamentos`.
+
 ---
 
-## 10. Estado actual y pendientes
+## 12. Estado actual y pendientes
 
 **Funciona hoy:**
 
