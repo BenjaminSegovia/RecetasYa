@@ -27,6 +27,13 @@ public class Usuario {
     @Column(nullable = false)
     private String nombreCompleto;
 
+    /**
+     * Email del usuario (opcional). Lo usa notification-service para avisar
+     * al médico cuando su receta queda RESERVADA o SIN_STOCK.
+     */
+    @Column
+    private String email;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;

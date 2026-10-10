@@ -23,6 +23,9 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        // Endpoints internos: solo se usan entre servicios
+                        // (notification-service consulta el email del médico).
+                        .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
