@@ -6,8 +6,8 @@ spring:
     name: dispensing-service
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5436/dispensing_db}
-    username: ${SPRING_DATASOURCE_USERNAME:recetaya}
-    password: ${SPRING_DATASOURCE_PASSWORD:recetaya123}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -19,7 +19,7 @@ spring:
 
 # Misma clave que en auth-service, para poder validar el JWT que llega.
 jwt:
-  secret: ${JWT_SECRET:recetasyaduocclantoniovaras12345678}
+  secret: ${JWT_SECRET}
 
 # URL base para llamar a inventory-service.
 inventory-service:

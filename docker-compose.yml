@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: auth_db
-      POSTGRES_USER: recetaya
-      POSTGRES_PASSWORD: recetaya123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -19,8 +19,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: receta_db
-      POSTGRES_USER: recetaya
-      POSTGRES_PASSWORD: recetaya123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5434:5432"
     volumes:
@@ -32,8 +32,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: inventory_db
-      POSTGRES_USER: recetaya
-      POSTGRES_PASSWORD: recetaya123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5435:5432"
     volumes:
@@ -45,8 +45,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: dispensing_db
-      POSTGRES_USER: recetaya
-      POSTGRES_PASSWORD: recetaya123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5436:5432"
     volumes:
@@ -75,9 +75,9 @@ services:
       - auth-db
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_db
-      SPRING_DATASOURCE_USERNAME: recetaya
-      SPRING_DATASOURCE_PASSWORD: recetaya123
-      JWT_SECRET: recetasyaduocclantoniovaras12345678
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8081:8081"
 
@@ -90,9 +90,9 @@ services:
       - localstack
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://receta-db:5432/receta_db
-      SPRING_DATASOURCE_USERNAME: recetaya
-      SPRING_DATASOURCE_PASSWORD: recetaya123
-      JWT_SECRET: recetasyaduocclantoniovaras12345678
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
       AWS_SQS_ENDPOINT: http://localstack:4566
     ports:
       - "8082:8082"
@@ -107,9 +107,9 @@ services:
       - receta-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-db:5432/inventory_db
-      SPRING_DATASOURCE_USERNAME: recetaya
-      SPRING_DATASOURCE_PASSWORD: recetaya123
-      JWT_SECRET: recetasyaduocclantoniovaras12345678
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
       AWS_SQS_ENDPOINT: http://localstack:4566
       RECETA_SERVICE_URL: http://receta-service:8082
     ports:
@@ -125,9 +125,9 @@ services:
       - inventory-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://dispensing-db:5432/dispensing_db
-      SPRING_DATASOURCE_USERNAME: recetaya
-      SPRING_DATASOURCE_PASSWORD: recetaya123
-      JWT_SECRET: recetasyaduocclantoniovaras12345678
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
       RECETA_SERVICE_URL: http://receta-service:8082
       INVENTORY_SERVICE_URL: http://inventory-service:8083
     ports:
