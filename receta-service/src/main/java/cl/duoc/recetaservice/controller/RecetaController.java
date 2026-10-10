@@ -3,6 +3,8 @@ package cl.duoc.recetaservice.controller;
 import cl.duoc.recetaservice.dto.ActualizarEstadoRequest;
 import cl.duoc.recetaservice.dto.RecetaRequest;
 import cl.duoc.recetaservice.dto.RecetaResponse;
+import cl.duoc.recetaservice.dto.RecetaUpdateRequest;
+import cl.duoc.recetaservice.model.EstadoReceta;
 import cl.duoc.recetaservice.service.RecetaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,16 @@ public class RecetaController {
     }
 
     /**
+     * MEDICO y FARMACEUTICO. Lista todas las recetas; opcionalmente se
+     * puede filtrar por estado (?estado=RESERVADA, ?estado=SIN_STOCK, etc.).
+     */
+    @GetMapping
+    public ResponseEntity<List<RecetaResponse>> listar(
+            @RequestParam(name = "estado", required = false) EstadoReceta estado) {
+        return ResponseEntity.ok(recetaService.listar(estado));
+    }
+
+    /**
      * Solo FARMACEUTICO. Lista únicamente las recetas con stock ya reservado.
      */
     @GetMapping("/reservadas")
@@ -40,6 +52,24 @@ public class RecetaController {
     @GetMapping("/{id}")
     public ResponseEntity<RecetaResponse> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(recetaService.obtenerPorId(id));
+    }
+
+    /**
+     * Solo MEDICO. Actualiza una receta que aún no esté reservada ni dispensada.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<RecetaResponse> actualizar(@PathVariable Long id,
+                                                     @Valid @RequestBody RecetaUpdateRequest request) {
+        return ResponseEntity.ok(recetaService.actualizarReceta(id, request));
+    }
+
+    /**
+     * Solo MEDICO. Elimina una receta que aún no esté reservada ni dispensada.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        recetaService.eliminarReceta(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**

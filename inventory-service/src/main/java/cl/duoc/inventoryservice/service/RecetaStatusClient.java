@@ -12,28 +12,44 @@ import java.util.Map;
 public class RecetaStatusClient {
     
     private final RestClient restClient;
+    private final String internalApiKey;
 
-    public RecetaStatusClient(@Value("${receta-service.base-url}") String baseUrl) {
+    public RecetaStatusClient(@Value("${receta-service.base-url}") String baseUrl,
+                              @Value("${internal.api-key}") String internalApiKey) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
+        this.internalApiKey = internalApiKey;
     }
 
     /**
      * Le avisa a receta-service que la receta con este id cambió de estado
      * (ej: a RESERVADA cuando se confirmó el stock).
+     *
+     * @return la receta actualizada, o null si la llamada falla.
      */
-    public void actualizarEstado(Long recetaId, String nuevoEstado) {
+    public RecetaStatusResponse actualizarEstado(Long recetaId, String nuevoEstado) {
         try {
-            restClient.patch()
+            RecetaStatusResponse response = restClient.patch()
                     .uri("/recetas/{id}/estado", recetaId)
+                    .header("X-Internal-Api-Key", internalApiKey)
                     .body(Map.of("estado", nuevoEstado))
                     .retrieve()
-                    .toBodilessEntity();
+                    .body(RecetaStatusResponse.class);
             log.info("Receta {} actualizada a estado {}", recetaId, nuevoEstado);
+            return response;
         } catch (Exception e) {
             log.error("No se pudo actualizar el estado de la receta {}: {}", recetaId, e.getMessage());
+            return null;
         }
+    }
+
+    /**
+     * Respuesta mínima de receta-service tras cambiar el estado: solo lo
+     * necesario para notificar al médico (username, paciente y sucursal).
+     */
+    public record RecetaStatusResponse(Long id, String medicoUsername,
+                                       String pacienteNombre, String sucursal) {
     }
 
 }

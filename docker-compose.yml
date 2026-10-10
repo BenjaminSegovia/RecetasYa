@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: auth_db
-      POSTGRES_USER: recetaya
-      POSTGRES_PASSWORD: recetaya123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -19,8 +19,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: receta_db
-      POSTGRES_USER: recetaya
-      POSTGRES_PASSWORD: recetaya123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5434:5432"
     volumes:
@@ -32,8 +32,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: inventory_db
-      POSTGRES_USER: recetaya
-      POSTGRES_PASSWORD: recetaya123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5435:5432"
     volumes:
@@ -45,8 +45,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: dispensing_db
-      POSTGRES_USER: recetaya
-      POSTGRES_PASSWORD: recetaya123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5436:5432"
     volumes:
@@ -62,6 +62,11 @@ services:
       - SERVICES=sqs
       - DEBUG=1
       - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+    # Crea las colas al arrancar, para no tener que crearlas a mano.
+    command: >
+      sh -c "awslocal sqs create-queue --queue-name reserva-stock-queue &&
+             awslocal sqs create-queue --queue-name notificacion-queue &&
+             sleep infinity"
     ports:
       - "4566:4566"
     volumes:
@@ -75,9 +80,14 @@ services:
       - auth-db
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_db
-      SPRING_DATASOURCE_USERNAME: recetaya
-      SPRING_DATASOURCE_PASSWORD: recetaya123
-      JWT_SECRET: recetasyaduocclantoniovaras12345678
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      # Perfil de datos semilla (usuarios de prueba); quitar en producción.
+      SPRING_PROFILES_ACTIVE: seed
+      # Contraseña de los usuarios semilla (medico1 / farma1).
+      SEED_PASSWORD: ${SEED_PASSWORD}
     ports:
       - "8081:8081"
 
@@ -90,9 +100,10 @@ services:
       - localstack
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://receta-db:5432/receta_db
-      SPRING_DATASOURCE_USERNAME: recetaya
-      SPRING_DATASOURCE_PASSWORD: recetaya123
-      JWT_SECRET: recetasyaduocclantoniovaras12345678
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       AWS_SQS_ENDPOINT: http://localstack:4566
     ports:
       - "8082:8082"
@@ -107,11 +118,14 @@ services:
       - receta-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-db:5432/inventory_db
-      SPRING_DATASOURCE_USERNAME: recetaya
-      SPRING_DATASOURCE_PASSWORD: recetaya123
-      JWT_SECRET: recetasyaduocclantoniovaras12345678
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       AWS_SQS_ENDPOINT: http://localstack:4566
       RECETA_SERVICE_URL: http://receta-service:8082
+      # Perfil de datos semilla (stock de prueba); quitar en producción.
+      SPRING_PROFILES_ACTIVE: seed
     ports:
       - "8083:8083"
 
@@ -122,16 +136,64 @@ services:
     depends_on:
       - dispensing-db
       - receta-service
-      - inventory-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://dispensing-db:5432/dispensing_db
-      SPRING_DATASOURCE_USERNAME: recetaya
-      SPRING_DATASOURCE_PASSWORD: recetaya123
-      JWT_SECRET: recetasyaduocclantoniovaras12345678
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       RECETA_SERVICE_URL: http://receta-service:8082
-      INVENTORY_SERVICE_URL: http://inventory-service:8083
     ports:
       - "8084:8084"
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    depends_on:
+      - localstack
+      - auth-service
+      - inventory-service
+      - mailpit
+    environment:
+      AWS_SQS_ENDPOINT: http://localstack:4566
+      AUTH_SERVICE_URL: http://auth-service:8081
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+    ports:
+      - "8085:8085"
+
+  # Punto de entrada único: los clientes solo conocen el puerto 8080.
+  # Enruta /api/<servicio>/** al servicio correspondiente.
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    depends_on:
+      - auth-service
+      - receta-service
+      - inventory-service
+      - dispensing-service
+      - notification-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      RECETA_SERVICE_URL: http://receta-service:8082
+      INVENTORY_SERVICE_URL: http://inventory-service:8083
+      DISPENSING_SERVICE_URL: http://dispensing-service:8084
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+    ports:
+      - "8080:8080"
+
+  # SMTP de desarrollo: captura los emails que envía notification-service
+  # y los muestra en la interfaz web http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Interfaz web
 
 volumes:
   auth-db-data:
