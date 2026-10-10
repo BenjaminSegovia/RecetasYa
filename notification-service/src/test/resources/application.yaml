@@ -1,0 +1,29 @@
+# Configuración para que el contexto de tests cargue sin infraestructura
+# (sin LocalStack ni Mailpit): solo se prueban unidades con mocks, así que
+# no hace falta que el listener de SQS arranque.
+spring:
+  mail:
+    # Solo define el bean JavaMailSender; en los tests unitarios no se envía nada real.
+    host: localhost
+    port: 1025
+  cloud:
+    aws:
+      sqs:
+        # Deshabilita el arranque del listener de SQS en los tests: los
+        # tests unitarios usan mocks y no necesitan LocalStack.
+        enabled: false
+
+aws:
+  sqs:
+    endpoint: http://localhost:4566
+    region: us-east-1
+    notificacion-queue-name: notificacion-queue
+
+internal:
+  api-key: test-key
+
+auth-service:
+  base-url: http://localhost:8081
+
+notification:
+  from: test@recetasya.cl
