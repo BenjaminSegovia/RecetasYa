@@ -76,7 +76,6 @@ para que cada parte del sistema evolucione de forma independiente.
 ### Tabla de servicios
 
 | Servicio | Puerto | Base de datos | Responsabilidad |
-
 |---|---|---|---|
 | `api-gateway` | 8080 | — | **Punto de entrada único**: enruta `/api/<servicio>/**` a cada servicio |
 | `auth-service` | 8081 | `auth_db` (5433) | Registro/login de usuarios, emisión y validación de JWT |
@@ -98,7 +97,6 @@ Infraestructura auxiliar:
 Dos roles, definidos en `auth-service` (`Role.java`) y aplicados en el `SecurityConfig` de cada servicio:
 
 | Rol | Puede |
-
 |---|---|
 | **MEDICO** | Crear recetas (`POST /recetas`), ver recetas por id |
 | **FARMACEUTICO** | Ver recetas reservadas (`GET /recetas/reservadas`), dispensar (`POST /dispensaciones`) |
@@ -118,7 +116,6 @@ Dos roles, definidos en `auth-service` (`Role.java`) y aplicados en el `Security
 ```
 
 | Estado | Significado | Quién lo cambia |
-
 |---|---|---|
 | `ACEPTADA_PENDIENTE_RESERVA` | Receta creada, aún sin verificar stock | `receta-service` al crear |
 | `RESERVADA` | Hay stock suficiente y ya fue descontado | `inventory-service` |
@@ -242,38 +239,40 @@ quitando el prefijo con `StripPrefix=2` y reenviando el header `Authorization` t
 ### auth-service — `:8081`
 
 | Método | Ruta | Descripción |
-
 |---|---|---|
 | POST | `/auth/register` | Crea usuario (username, password, nombreCompleto, email, role) y retorna JWT |
 | POST | `/auth/login` | Valida credenciales y retorna JWT |
-| GET | `/internal/usuarios/{username}` | interno | Entrega username, nombreCompleto y email (lo usa notification-service) |
+
+Los dos endpoints internos siguientes exigen la cabecera `X-Internal-Api-Key`
+(igual que el `PATCH` de receta-service):
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/internal/usuarios/{username}` | Entrega username, nombreCompleto y email (lo usa notification-service) |
 
 ### receta-service — `:8082`
 
 | Método | Ruta | Rol | Descripción |
-
 |---|---|---|---|
 | POST | `/recetas` | MEDICO | Crea receta y dispara la reserva de stock |
 | GET | `/recetas/reservadas` | FARMACEUTICO | Lista recetas con stock reservado |
 | GET | `/recetas/{id}` | MEDICO / FARMACEUTICO | Detalle de receta |
-| PATCH | `/recetas/{id}/estado` | interno | Cambia el estado (lo usan inventory y dispensing) |
+| PATCH | `/recetas/{id}/estado` | interno | Cambia el estado; exige `X-Internal-Api-Key` (lo usan inventory y dispensing) |
 
 ### inventory-service — `:8083`
 
 | Método | Ruta | Rol | Descripción |
-
 |---|---|---|---|
 | POST | `/inventario` | autenticado | Crea o actualiza stock (medicamento + sucursal) |
 | GET | `/inventario` | autenticado | Lista todo el stock |
 | GET | `/inventario/{id}` | autenticado | Stock por id |
 | PUT | `/inventario/{id}` | autenticado | Actualiza stock |
 | DELETE | `/inventario/{id}` | autenticado | Elimina stock |
-| — | listener SQS | — | Escucha `reserva-stock-queue` y reserva/amarra stock |
+| — | listener SQS | — | Escucha `reserva-stock-queue` y reserva/amarra stock; publica el resultado en `notificacion-queue` |
 
 ### dispensing-service — `:8084`
 
 | Método | Ruta | Rol | Descripción |
-
 |---|---|---|---|
 | POST | `/dispensaciones` | FARMACEUTICO | Dispensa una receta (debe estar RESERVADA) |
 
@@ -328,6 +327,7 @@ LOCALSTACK_AUTH_TOKEN=tu_token_aqui
 POSTGRES_USER=recetaya
 POSTGRES_PASSWORD=tu_password_aqui
 JWT_SECRET=tu_secreto_largo_y_aleatorio_aqui
+INTERNAL_API_KEY=clave_interna_para_endpoints_de_servicio
 ```
 
 > Este archivo está en `.gitignore` — cada persona que clone el proyecto
@@ -371,6 +371,12 @@ cd receta-service
 ### Prueba rápida de punta a punta
 
 Todos los ejemplos pasan por el gateway (`:8080`) bajo el prefijo `/api/<servicio>`.
+
+> **Credenciales semilla** (si levantaste con el perfil `seed`, que es el
+> default en el compose): ya existen dos usuarios creados, así que puedes
+> saltarte los pasos 1 y 2 e ir directo a iniciar sesión con
+> `medico1 / secret123` (médico, con email `medico1@recetasya.cl`) o
+> `farma1 / secret123` (farmacéutico).
 
 ```bash
 # 1. Registrar un médico (con email, para que pueda recibir notificaciones)
@@ -444,12 +450,17 @@ Paquete base: `cl.duoc.<nombre-servicio>`.
 - **Secretos externalizados**: `JWT_SECRET`, credenciales de PostgreSQL y el token
   de LocalStack salen de variables de entorno (plantilla en `.env.example`).
 - Las colas SQS se crean automáticamente al arrancar LocalStack.
+- **Endpoints internos protegidos**: `PATCH /recetas/{id}/estado` y
+  `GET /internal/usuarios/{username}` exigen la cabecera `X-Internal-Api-Key`
+  (`INTERNAL_API_KEY`); los servicios clientes la envían.
+- **Datos semilla** con perfil `seed`: `medico1` (con email) y `farma1` en
+  auth-service; stock de prueba en inventory-service.
+- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 29 tests de la
+  lógica de negocio.
 - 5 servicios + gateway + Mailpit contenedorizados con `docker compose up --build`.
 
 **Pendiente / puntos a mejorar:**
 
-1. **No hay frontend.** Hoy todo se consume vía API REST.
-2. **`PATCH /recetas/{id}/estado` está `permitAll`**: debería exigir un token de servicio.
-3. **No hay semillas de datos** (usuarios ni stock iniciales): hay que registrarlos a mano.
-4. **`INVENTORY_SERVICE_URL` está configurado en dispensing-service pero no se usa** en el código;
-   hoy el stock no se vuelve a descontar ni conciliar al dispensar.
+1. **No hay frontend.** Hoy todo se consume vía API REST (pendiente: aún no se hace).
+2. **Credenciales de las semillas hardcodeadas** (`secret123`): sirven para desarrollo;
+   en producción deberían venir de variables de entorno.
