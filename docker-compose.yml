@@ -84,6 +84,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      # Perfil de datos semilla (usuarios de prueba); quitar en producción.
+      SPRING_PROFILES_ACTIVE: seed
     ports:
       - "8081:8081"
 
@@ -120,6 +122,8 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       AWS_SQS_ENDPOINT: http://localstack:4566
       RECETA_SERVICE_URL: http://receta-service:8082
+      # Perfil de datos semilla (stock de prueba); quitar en producción.
+      SPRING_PROFILES_ACTIVE: seed
     ports:
       - "8083:8083"
 
