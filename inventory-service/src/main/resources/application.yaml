@@ -27,6 +27,9 @@ aws:
     endpoint: ${AWS_SQS_ENDPOINT:http://localhost:4566}
     region: us-east-1
     queue-name: reserva-stock-queue
+    # Cola donde se publica el resultado (RESERVADA / SIN_STOCK) para que
+    # notification-service avise al médico.
+    notificacion-queue-name: notificacion-queue
 
 # URL de receta-service, para avisarle cuando una receta queda reservada.
 receta-service:
