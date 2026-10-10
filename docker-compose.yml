@@ -134,7 +134,6 @@ services:
     depends_on:
       - dispensing-db
       - receta-service
-      - inventory-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://dispensing-db:5432/dispensing_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -142,7 +141,6 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       RECETA_SERVICE_URL: http://receta-service:8082
-      INVENTORY_SERVICE_URL: http://inventory-service:8083
     ports:
       - "8084:8084"
 

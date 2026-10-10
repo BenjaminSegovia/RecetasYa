@@ -21,10 +21,6 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
 
-# URL base para llamar a inventory-service.
-inventory-service:
-  base-url: ${INVENTORY_SERVICE_URL:http://localhost:8083}
-
 # URL base para llamar a receta-service y validar la receta antes de dispensar.
 receta-service:
   base-url: ${RECETA_SERVICE_URL:http://localhost:8082}
