@@ -235,7 +235,10 @@ Ejemplo: `/api/auth/login` llega a auth-service como `/auth/login`.
 | `/api/recetas/**` | `receta-service` (`:8082`) |
 | `/api/inventario/**` | `inventory-service` (`:8083`) |
 | `/api/dispensaciones/**` | `dispensing-service` (`:8084`) |
-| `/api/notificaciones/**` | `notification-service` (`:8085`) |
+
+> No hay ruta `/api/notificaciones/**`: `notification-service` es un worker sin
+> endpoints REST (solo consume `notificacion-queue`), por lo que enrutarlo al
+> gateway produciría siempre 404.
 
 ### auth-service — `:8081`
 

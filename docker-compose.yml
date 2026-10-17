@@ -181,7 +181,6 @@ services:
       RECETA_SERVICE_URL: http://receta-service:8082
       INVENTORY_SERVICE_URL: http://inventory-service:8083
       DISPENSING_SERVICE_URL: http://dispensing-service:8084
-      NOTIFICATION_SERVICE_URL: http://notification-service:8085
     ports:
       - "8080:8080"
 
