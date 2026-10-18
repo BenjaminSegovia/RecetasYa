@@ -611,23 +611,28 @@ para relaciones entidad ↔ entidad. El `@JoinColumn` define la columna foránea
   12 contenedores quedan `healthy` y los servicios arrancan en orden.
 - **CI con GitHub Actions**: tests unitarios de los 6 módulos y validación del
   `docker-compose.yml` en cada push/PR (sección 10).
-- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 33 tests de la
+- **Bug corregido en recetas**: el `CHECK` de `recetas.estado` en las bases
+  existentes estaba creado con 3 estados (faltaba `SIN_STOCK`, que se agregó
+  después al enum y `ddl-auto: update` nunca actualiza constraints), por lo que
+  una receta sin stock devolvía **500** en vez de quedar `SIN_STOCK`.
+  `EstadoRecetaConstraintMigration` (receta-service) recrea el constraint con
+  los estados del enum en cada arranque; es idempotente y no toca datos.
+- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 35 tests de la
   lógica de negocio (más los 5 `contextLoads`, que necesitan infraestructura).
 - 5 servicios + gateway + Mailpit contenedorizados con `docker compose up --build`.
 
 **Pendiente / puntos a mejorar:**
 
-1. **No hay frontend.** Hoy todo se consume vía API REST.
-2. **Sin tests de integración en CI.** Los `*ApplicationTests` no corren porque
+1. **Sin tests de integración en CI.** Los `*ApplicationTests` no corren porque
    necesitan infraestructura; falta **Testcontainers** (PostgreSQL + LocalStack)
    para poder ejecutarlos dentro del pipeline.
-3. **Resiliencia en SQS.** No hay DLQ ni reintentos configurados en
+2. **Resiliencia en SQS.** No hay DLQ ni reintentos configurados en
    `ReservaStockListener`, ni **idempotencia**: un mensaje entregado dos veces
    podría descontar stock dos veces.
-4. **Sin paginación** en `GET /recetas` e `GET /inventario`: con datos reales
+3. **Sin paginación** en `GET /recetas` e `GET /inventario`: con datos reales
    las respuestas crecerán sin límite.
-5. **Sin `README.md` en la raíz** (GitHub solo muestra `RESUMEN_PROYECTO.md`
+4. **Sin `README.md` en la raíz** (GitHub solo muestra `RESUMEN_PROYECTO.md`
    si lo renombras) **ni documentación OpenAPI/Swagger** (springdoc) para
    probar la API desde el navegador.
-6. **`api-gateway` no tiene wrapper `mvnw` propio**: se usa el de otro servicio
+5. **`api-gateway` no tiene wrapper `mvnw` propio**: se usa el de otro servicio
    con `-f ../api-gateway/pom.xml` (sección 9).
