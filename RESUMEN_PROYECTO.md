@@ -534,7 +534,7 @@ cada **Pull Request**:
 > El job de tests corre **solo los tests unitarios** (`*Test`): los
 > `*ApplicationTests` (con `contextLoads`) necesitan las 4 bases de datos,
 > LocalStack y Mailpit, que en CI no existen. Para correrlos haría falta
-> Testcontainers (ver pendiente 3 de la sección 12).
+> Testcontainers (ver pendiente 2 de la sección 12).
 
 ---
 
@@ -596,7 +596,10 @@ para relaciones entidad ↔ entidad. El `@JoinColumn` define la columna foránea
   (`INTERNAL_API_KEY`); los servicios clientes la envían.
 - **Datos semilla** con perfil `seed`: `medico1` (con email) y `farma1` en
   auth-service (contraseña desde `SEED_PASSWORD`); stock de prueba en
-  inventory-service.
+  inventory-service. El seed además **completa el `email` si un usuario
+  existente quedó sin él** (usuarios creados antes de que existiera el campo
+  no recibían notificaciones) y avisa en el arranque con un `WARN` si queda
+  algún usuario sin email.
 - **Manejo de errores centralizado en los 4 servicios REST**: `receta-service`,
   `auth-service`, `inventory-service` y `dispensing-service` comparten el mismo
   `GlobalExceptionHandler` + `ErrorResponse` (`timestamp`, `status`, `error`,
@@ -608,32 +611,23 @@ para relaciones entidad ↔ entidad. El `@JoinColumn` define la columna foránea
   12 contenedores quedan `healthy` y los servicios arrancan en orden.
 - **CI con GitHub Actions**: tests unitarios de los 6 módulos y validación del
   `docker-compose.yml` en cada push/PR (sección 10).
-- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 28 tests de la
+- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 33 tests de la
   lógica de negocio (más los 5 `contextLoads`, que necesitan infraestructura).
 - 5 servicios + gateway + Mailpit contenedorizados con `docker compose up --build`.
 
 **Pendiente / puntos a mejorar:**
 
 1. **No hay frontend.** Hoy todo se consume vía API REST.
-2. **Usuarios semilla antiguos con `email = NULL`.** En la BD local,
-   `medico1`, `dra.perez` y `farm.lopez` se crearon **antes** de que existiera
-   el campo `email`, y el `SeedDataConfig` solo inserta si el usuario no
-   existe: nunca rellena el email faltante. Síntoma: `notification-service`
-   loguea *"No hay email para el medico X; no se puede notificar la receta N"*
-   y **nunca llega el correo**. Dos opciones:
-   - (recomendado) hacer que el seed **complete el email si está vacío** —
-     arregla también las BDs existentes de cada quien;
-   - o levantar de cero: `docker compose down -v` (borra los datos de desarrollo).
-3. **Sin tests de integración en CI.** Los `*ApplicationTests` no corren porque
+2. **Sin tests de integración en CI.** Los `*ApplicationTests` no corren porque
    necesitan infraestructura; falta **Testcontainers** (PostgreSQL + LocalStack)
    para poder ejecutarlos dentro del pipeline.
-4. **Resiliencia en SQS.** No hay DLQ ni reintentos configurados en
+3. **Resiliencia en SQS.** No hay DLQ ni reintentos configurados en
    `ReservaStockListener`, ni **idempotencia**: un mensaje entregado dos veces
    podría descontar stock dos veces.
-5. **Sin paginación** en `GET /recetas` e `GET /inventario`: con datos reales
+4. **Sin paginación** en `GET /recetas` e `GET /inventario`: con datos reales
    las respuestas crecerán sin límite.
-6. **Sin `README.md` en la raíz** (GitHub solo muestra `RESUMEN_PROYECTO.md`
+5. **Sin `README.md` en la raíz** (GitHub solo muestra `RESUMEN_PROYECTO.md`
    si lo renombras) **ni documentación OpenAPI/Swagger** (springdoc) para
    probar la API desde el navegador.
-7. **`api-gateway` no tiene wrapper `mvnw` propio**: se usa el de otro servicio
+6. **`api-gateway` no tiene wrapper `mvnw` propio**: se usa el de otro servicio
    con `-f ../api-gateway/pom.xml` (sección 9).
