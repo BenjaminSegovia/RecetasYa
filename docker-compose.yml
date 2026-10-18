@@ -261,6 +261,10 @@ services:
       RECETA_SERVICE_URL: http://receta-service:8082
       INVENTORY_SERVICE_URL: http://inventory-service:8083
       DISPENSING_SERVICE_URL: http://dispensing-service:8084
+      # Orígenes permitidos para el frontend (CORS): el navegador entra por el
+      # gateway, así que el preflight OPTIONS se resuelve aquí y no en cada
+      # microservicio. Por defecto, el puerto del Live Server.
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:5501,http://127.0.0.1:5501}
     ports:
       - "8080:8080"
     healthcheck:

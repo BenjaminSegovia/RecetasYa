@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecetaYA — Dispensación</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <h1 class="titulo-pagina">Dispensación</h1>
+    <p class="subtitulo">Recetas con stock reservado listas para entregar al paciente.</p>
+
+    <div id="mensaje" hidden></div>
+
+    <div class="rejilla">
+      <!-- ------------------------- Reservadas (acción) ----------------------- -->
+      <section class="tarjeta tarjeta-ancho">
+        <h2>Recetas reservadas</h2>
+
+        <div class="acciones-form" style="margin-top:0;margin-bottom:1rem">
+          <button type="button" class="btn btn-secundario" id="btn-recargar">Actualizar</button>
+          <small style="color:var(--color-texto-suave);align-self:center">
+            Al dispensar se descuenta el stock en inventario y el médico recibe la notificación por email.
+          </small>
+        </div>
+
+        <div class="tabla-contenedor">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Paciente</th>
+                <th>Sucursal</th>
+                <th>Medicamentos</th>
+                <th>Estado</th>
+                <th>Creada</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-reservadas">
+              <tr><td colspan="7" class="vacio">Cargando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ---------------------- Todas (solo lectura) ------------------------- -->
+      <section class="tarjeta tarjeta-ancho">
+        <h2>Todas las recetas</h2>
+
+        <div class="acciones-form" style="margin-top:0;margin-bottom:1rem">
+          <select id="filtro-estado" style="max-width:250px">
+            <option value="TODOS">Todos los estados</option>
+            <option value="ACEPTADA_PENDIENTE_RESERVA">Pendiente de reserva</option>
+            <option value="RESERVADA">Reservada</option>
+            <option value="SIN_STOCK">Sin stock</option>
+            <option value="DISPENSADA">Dispensada</option>
+          </select>
+          <button type="button" class="btn btn-secundario" id="btn-recargar-todas">Actualizar</button>
+        </div>
+
+        <div class="tabla-contenedor">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Paciente</th>
+                <th>Sucursal</th>
+                <th>Medicamentos</th>
+                <th>Estado</th>
+                <th>Creada</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-todas">
+              <tr><td colspan="6" class="vacio">Cargando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/farmaceutico.js"></script>
+</body>
+</html>

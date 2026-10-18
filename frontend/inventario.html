@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecetaYA — Inventario</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <h1 class="titulo-pagina">Inventario</h1>
+    <p class="subtitulo">Stock por medicamento y sucursal. Guardar con la misma combinación actualiza la cantidad.</p>
+
+    <div id="mensaje" hidden></div>
+
+    <div class="rejilla">
+      <!-- ------------------------- Cargar stock ------------------------------ -->
+      <section class="tarjeta">
+        <h2 id="titulo-form">Cargar stock</h2>
+
+        <form id="form-stock" novalidate>
+          <div class="campo">
+            <label for="medicamento">Medicamento</label>
+            <input id="medicamento" placeholder="Ibuprofeno 400mg" required />
+          </div>
+          <div class="campo">
+            <label for="sucursal">Sucursal</label>
+            <input id="sucursal" placeholder="Centro, Providencia..." required />
+          </div>
+          <div class="campo">
+            <label for="cantidad">Cantidad disponible</label>
+            <input id="cantidad" type="number" min="0" value="10" required />
+          </div>
+          <div class="acciones-form">
+            <button type="submit" class="btn" id="btn-guardar">Guardar stock</button>
+            <button type="button" class="btn btn-secundario oculto" id="btn-cancelar">Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ------------------------- Stock actual ------------------------------ -->
+      <section class="tarjeta tarjeta-ancho">
+        <h2>Stock actual</h2>
+
+        <div class="acciones-form" style="margin-top:0;margin-bottom:1rem">
+          <button type="button" class="btn btn-secundario" id="btn-recargar">Actualizar</button>
+        </div>
+
+        <div class="tabla-contenedor">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Medicamento</th>
+                <th>Sucursal</th>
+                <th>Disponible</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-stock">
+              <tr><td colspan="5" class="vacio">Cargando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/inventario.js"></script>
+</body>
+</html>
