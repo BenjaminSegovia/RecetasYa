@@ -39,3 +39,11 @@ receta-service:
 # (PATCH /recetas/{id}/estado).
 internal:
   api-key: ${INTERNAL_API_KEY}
+
+# Actuator: /actuator/health expone el estado real del servicio (BD, disco, etc.).
+# Es lo que consulta el healthcheck del docker-compose para saber si está vivo.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
