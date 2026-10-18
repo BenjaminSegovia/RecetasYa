@@ -35,6 +35,8 @@ para que cada parte del sistema evolucione de forma independiente.
 | Orquestación | Docker Compose |
 | Build | Maven (wrapper `mvnw`) |
 | Mapeo | Lombok |
+| Salud / monitoreo | Spring Boot Actuator (`GET /actuator/health`) + `healthcheck` en Docker Compose |
+| CI | GitHub Actions (`.github/workflows/ci.yml`): tests por servicio + validación del compose |
 
 ---
 
@@ -300,6 +302,17 @@ Canales de salida:
 - **En producción**: configurar `MAIL_HOST` / `MAIL_PORT` (y credenciales) hacia un
   SMTP real.
 
+### Actuator — presente en todos los servicios
+
+Cada servicio (incluido el gateway) expone estos endpoints **sin JWT**, porque
+los consume el `healthcheck` de Docker Compose (se accede al puerto de cada
+servicio, no a través del gateway):
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/actuator/health` | Estado real del servicio: devuelve `{"status":"UP"}` solo si la app **y** su base de datos responden |
+| GET | `/actuator/info` | Información básica de la aplicación |
+
 ---
 
 ## 8. Cómo levantar el proyecto
@@ -368,6 +381,17 @@ Las dos colas SQS (`reserva-stock-queue` y `notificacion-queue`) se crean
 **automáticamente** al arrancar LocalStack; ya no hay que crearlas a mano.
 Si ejecutas `docker compose down -v` se borran los volúmenes, pero al volver
 a levantar se recrean solas.
+
+El arranque es **por etapas**: las 4 bases de datos, LocalStack y Mailpit
+tienen `healthcheck`, y los servicios usan `depends_on: condition:
+service_healthy`, así que cada servicio arranca **cuando su infraestructura ya
+acepta conexiones** (antes dependía de los reintentos de `restart:
+unless-stopped`). Para ver el estado:
+
+```bash
+docker compose ps                        # las 12 filas deben quedar "healthy"
+curl http://localhost:8081/actuator/health   # {"status":"UP"}
+```
 
 Para correr un servicio en local (fuera de Docker):
 
@@ -478,16 +502,39 @@ main
 develop
 feature/receta-crud
 feature/receta-manejo-errores
+feature/doc-resumen-gateway          (integrada en develop)
+feature/manejador-errores            (integrada en develop)
+feature/healthchecks-actuator        (integrada en develop)
+feature/ci-github-actions            (integrada en develop)
+feature/doc-actualizacion            (esta documentación)
 ```
+
+> Las ramas ya integradas se pueden borrar (`git branch -d <rama>` y
+> eliminarlas de GitHub) para no dejar basura.
 
 Flujo básico:
 
 ```bash
-git checkout develop            # trabajar sobre la rama de integración
+git checkout develop            # partir de la rama de integración
 git checkout -b feature/x       # crear una rama de feature nueva
 git push -u origin feature/x    # publicarla en GitHub
 git checkout develop            # integrar (merge o PR)
 ```
+
+### Integración continua (GitHub Actions)
+
+`.github/workflows/ci.yml` se ejecuta en cada **push a `main`/`develop`** y en
+cada **Pull Request**:
+
+| Job | Qué hace |
+|---|---|
+| `tests` | `mvn -Dtest='*Test' test` en los 6 módulos, **en paralelo** (`fail-fast: false`, así ves todos los fallos de una) |
+| `compose` | Valida `docker-compose.yml` contra `.env.example`: si alguien agrega una variable al compose sin documentarla en la plantilla, el CI falla |
+
+> El job de tests corre **solo los tests unitarios** (`*Test`): los
+> `*ApplicationTests` (con `contextLoads`) necesitan las 4 bases de datos,
+> LocalStack y Mailpit, que en CI no existen. Para correrlos haría falta
+> Testcontainers (ver pendiente 3 de la sección 12).
 
 ---
 
@@ -550,10 +597,43 @@ para relaciones entidad ↔ entidad. El `@JoinColumn` define la columna foránea
 - **Datos semilla** con perfil `seed`: `medico1` (con email) y `farma1` en
   auth-service (contraseña desde `SEED_PASSWORD`); stock de prueba en
   inventory-service.
-- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 29 tests de la
-  lógica de negocio.
+- **Manejo de errores centralizado en los 4 servicios REST**: `receta-service`,
+  `auth-service`, `inventory-service` y `dispensing-service` comparten el mismo
+  `GlobalExceptionHandler` + `ErrorResponse` (`timestamp`, `status`, `error`,
+  `message`, `path`, `fieldErrors`), en lugar del error por defecto de Spring.
+  `dispensing-service` además traduce los errores que llegan de `receta-service`
+  (404 si la receta no existe, 502 si ese servicio falla).
+- **Salud verificable**: Actuator en los 6 módulos (`/actuator/health`) y
+  `healthcheck` + `depends_on: condition: service_healthy` en el compose; las
+  12 contenedores quedan `healthy` y los servicios arrancan en orden.
+- **CI con GitHub Actions**: tests unitarios de los 6 módulos y validación del
+  `docker-compose.yml` en cada push/PR (sección 10).
+- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 28 tests de la
+  lógica de negocio (más los 5 `contextLoads`, que necesitan infraestructura).
 - 5 servicios + gateway + Mailpit contenedorizados con `docker compose up --build`.
 
 **Pendiente / puntos a mejorar:**
 
 1. **No hay frontend.** Hoy todo se consume vía API REST.
+2. **Usuarios semilla antiguos con `email = NULL`.** En la BD local,
+   `medico1`, `dra.perez` y `farm.lopez` se crearon **antes** de que existiera
+   el campo `email`, y el `SeedDataConfig` solo inserta si el usuario no
+   existe: nunca rellena el email faltante. Síntoma: `notification-service`
+   loguea *"No hay email para el medico X; no se puede notificar la receta N"*
+   y **nunca llega el correo**. Dos opciones:
+   - (recomendado) hacer que el seed **complete el email si está vacío** —
+     arregla también las BDs existentes de cada quien;
+   - o levantar de cero: `docker compose down -v` (borra los datos de desarrollo).
+3. **Sin tests de integración en CI.** Los `*ApplicationTests` no corren porque
+   necesitan infraestructura; falta **Testcontainers** (PostgreSQL + LocalStack)
+   para poder ejecutarlos dentro del pipeline.
+4. **Resiliencia en SQS.** No hay DLQ ni reintentos configurados en
+   `ReservaStockListener`, ni **idempotencia**: un mensaje entregado dos veces
+   podría descontar stock dos veces.
+5. **Sin paginación** en `GET /recetas` e `GET /inventario`: con datos reales
+   las respuestas crecerán sin límite.
+6. **Sin `README.md` en la raíz** (GitHub solo muestra `RESUMEN_PROYECTO.md`
+   si lo renombras) **ni documentación OpenAPI/Swagger** (springdoc) para
+   probar la API desde el navegador.
+7. **`api-gateway` no tiene wrapper `mvnw` propio**: se usa el de otro servicio
+   con `-f ../api-gateway/pom.xml` (sección 9).
