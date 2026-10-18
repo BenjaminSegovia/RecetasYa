@@ -12,6 +12,14 @@ services:
       - "5433:5432"
     volumes:
       - auth-db-data:/var/lib/postgresql/data
+    # "healthy" = Postgres ya acepta conexiones (no basta con que el
+    # contenedor esté levantado).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   receta-db:
     image: postgres:16
@@ -25,6 +33,12 @@ services:
       - "5434:5432"
     volumes:
       - receta-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d receta_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   inventory-db:
     image: postgres:16
@@ -38,6 +52,12 @@ services:
       - "5435:5432"
     volumes:
       - inventory-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d inventory_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   dispensing-db:
     image: postgres:16
@@ -51,6 +71,12 @@ services:
       - "5436:5432"
     volumes:
       - dispensing-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d dispensing_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # LocalStack: emula SQS localmente para no depender de una cuenta AWS
   # mientras se desarrolla y prueba en el equipo.
@@ -71,13 +97,20 @@ services:
       - "4566:4566"
     volumes:
       - localstack-data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4566/_localstack/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   auth-service:
     build: ./auth-service
     container_name: auth-service
     restart: unless-stopped
     depends_on:
-      - auth-db
+      auth-db:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -90,14 +123,23 @@ services:
       SEED_PASSWORD: ${SEED_PASSWORD}
     ports:
       - "8081:8081"
+    healthcheck:
+      # Las imágenes de servicios son Alpine: wget es de busybox.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   receta-service:
     build: ./receta-service
     container_name: receta-service
     restart: unless-stopped
     depends_on:
-      - receta-db
-      - localstack
+      receta-db:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://receta-db:5432/receta_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -107,15 +149,26 @@ services:
       AWS_SQS_ENDPOINT: http://localstack:4566
     ports:
       - "8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   inventory-service:
     build: ./inventory-service
     container_name: inventory-service
     restart: unless-stopped
     depends_on:
-      - inventory-db
-      - localstack
-      - receta-service
+      inventory-db:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+      # llama a receta-service (PATCH /recetas/{id}/estado) cuando reserva,
+      # así que espera a que esté respondiendo, no solo a que esté encendido.
+      receta-service:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-db:5432/inventory_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -128,14 +181,22 @@ services:
       SPRING_PROFILES_ACTIVE: seed
     ports:
       - "8083:8083"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   dispensing-service:
     build: ./dispensing-service
     container_name: dispensing-service
     restart: unless-stopped
     depends_on:
-      - dispensing-db
-      - receta-service
+      dispensing-db:
+        condition: service_healthy
+      receta-service:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://dispensing-db:5432/dispensing_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -145,16 +206,27 @@ services:
       RECETA_SERVICE_URL: http://receta-service:8082
     ports:
       - "8084:8084"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   notification-service:
     build: ./notification-service
     container_name: notification-service
     restart: unless-stopped
     depends_on:
-      - localstack
-      - auth-service
-      - inventory-service
-      - mailpit
+      localstack:
+        condition: service_healthy
+      # consulta GET /internal/usuarios/{username} para saber a quién escribir.
+      auth-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
     environment:
       AWS_SQS_ENDPOINT: http://localstack:4566
       AUTH_SERVICE_URL: http://auth-service:8081
@@ -163,6 +235,12 @@ services:
       MAIL_PORT: 1025
     ports:
       - "8085:8085"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8085/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   # Punto de entrada único: los clientes solo conocen el puerto 8080.
   # Enruta /api/<servicio>/** al servicio correspondiente.
@@ -170,6 +248,8 @@ services:
     build: ./api-gateway
     container_name: api-gateway
     restart: unless-stopped
+    # Solo espera a que los servicios estén encendidos: es un proxy, si un
+    # backend cae devuelve 502/503 sin necesidad de bloquear su arranque.
     depends_on:
       - auth-service
       - receta-service
@@ -183,6 +263,12 @@ services:
       DISPENSING_SERVICE_URL: http://dispensing-service:8084
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   # SMTP de desarrollo: captura los emails que envía notification-service
   # y los muestra en la interfaz web http://localhost:8025.
@@ -193,6 +279,12 @@ services:
     ports:
       - "1025:1025" # SMTP
       - "8025:8025" # Interfaz web
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8025/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   auth-db-data:
