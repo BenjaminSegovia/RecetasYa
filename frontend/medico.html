@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecetaYA — Mis recetas</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <h1 class="titulo-pagina">Mis recetas</h1>
+    <p class="subtitulo">Crea recetas y sigue su estado: pendiente de reserva → reservada → dispensada.</p>
+
+    <div id="mensaje" hidden></div>
+
+    <div class="rejilla">
+      <!-- ---------------------- Formulario crear/editar ---------------------- -->
+      <section class="tarjeta">
+        <h2 id="titulo-form">Nueva receta</h2>
+
+        <form id="form-receta" novalidate>
+          <div class="campo">
+            <label for="paciente">Paciente</label>
+            <input id="paciente" placeholder="Nombre del paciente" required />
+          </div>
+
+          <div class="campo">
+            <label for="sucursal">Sucursal</label>
+            <input id="sucursal" placeholder="Nombre de la sucursal" required />
+          </div>
+
+          <label>Medicamentos</label>
+          <div class="tabla-contenedor">
+            <table class="tabla-medicamentos">
+              <thead>
+                <tr>
+                  <th style="width:60%">Medicamento</th>
+                  <th>Cant.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tabla-medicamentos">
+                <tr class="fila-medicamento">
+                  <td><input class="med-nombre" placeholder="Nombre del medicamento" required /></td>
+                  <td><input class="med-cantidad" type="number" min="1" value="0" /></td>
+                  <td>
+                    <button type="button" class="btn btn-peligro btn-chico" data-quitar>✕</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <button type="button" class="btn btn-secundario btn-chico" id="btn-agregar-med"
+                  style="margin-top:0.5rem">+ Agregar medicamento</button>
+
+          <div class="acciones-form">
+            <button type="submit" class="btn" id="btn-guardar">Crear receta</button>
+            <button type="button" class="btn btn-secundario oculto" id="btn-cancelar">Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- --------------------------- Lista de recetas ------------------------ -->
+      <section class="tarjeta tarjeta-ancho">
+        <h2>Recetas</h2>
+
+        <div class="acciones-form" style="margin-top:0;margin-bottom:1rem">
+          <select id="filtro-estado" style="max-width:250px">
+            <option value="TODOS">Todos los estados</option>
+            <option value="ACEPTADA_PENDIENTE_RESERVA">Pendiente de reserva</option>
+            <option value="RESERVADA">Reservada</option>
+            <option value="SIN_STOCK">Sin stock</option>
+            <option value="DISPENSADA">Dispensada</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:0.35rem;font-weight:400;flex:1">
+            <input type="checkbox" id="solo-mias" checked style="width:auto" />
+            Solo mis recetas
+          </label>
+          <button type="button" class="btn btn-secundario" id="btn-recargar">Actualizar</button>
+        </div>
+
+        <div class="tabla-contenedor">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Paciente</th>
+                <th>Sucursal</th>
+                <th>Medicamentos</th>
+                <th>Estado</th>
+                <th>Creada</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-recetas">
+              <tr><td colspan="7" class="vacio">Cargando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/medico.js"></script>
+</body>
+</html>
