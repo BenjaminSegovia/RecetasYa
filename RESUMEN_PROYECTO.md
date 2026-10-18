@@ -37,6 +37,8 @@ para que cada parte del sistema evolucione de forma independiente.
 | Mapeo | Lombok |
 | Salud / monitoreo | Spring Boot Actuator (`GET /actuator/health`) + `healthcheck` en Docker Compose |
 | CI | GitHub Actions (`.github/workflows/ci.yml`): tests por servicio + validación del compose |
+| Frontend | HTML + CSS + JavaScript puro (sin frameworks ni build) en `frontend/`, servido con Live Server (`:5501`) |
+| CORS | Resuelto en `api-gateway` (`CorsConfig`): orígenes permitidos desde `FRONTEND_ORIGINS` |
 
 ---
 
@@ -242,6 +244,21 @@ Ejemplo: `/api/auth/login` llega a auth-service como `/auth/login`.
 > endpoints REST (solo consume `notificacion-queue`), por lo que enrutarlo al
 > gateway produciría siempre 404.
 
+El gateway también resuelve el **CORS** del frontend (`config/CorsConfig`, un
+`CorsFilter` de Spring MVC): el frontend corre en `http://localhost:5501` (Live
+Server) y la API en `http://localhost:8080`, así que el navegador exige CORS en
+cada llamada. Spring Cloud Gateway (variante webmvc) no trae soporte propio y el
+preflight `OPTIONS` **no llega a los microservicios** (lo responde el gateway),
+por eso se configura aquí y no en cada servicio. Los orígenes salen de
+`FRONTEND_ORIGINS` (por defecto `http://localhost:5501` y `http://127.0.0.1:5501`).
+
+| Frontend | Qué hay |
+|---|---|
+| `frontend/index.html` | Login y registro (con selector de rol; pide email obligatorio si el rol es médico) |
+| `frontend/medico.html` | Crear recetas (una o varias), listarlas con filtro por estado, editar y eliminar |
+| `frontend/farmaceutico.html` | Recetas reservadas (con botón **Dispensar**) y todas las recetas en solo lectura |
+| `frontend/inventario.html` | Carga, edición y eliminación de stock por medicamento y sucursal |
+
 ### auth-service — `:8081`
 
 | Método | Ruta | Descripción |
@@ -399,6 +416,24 @@ Para correr un servicio en local (fuera de Docker):
 cd receta-service
 ./mvnw spring-boot:run     # en Windows: mvnw.cmd spring-boot:run
 ```
+
+### 4. Levantar el frontend
+
+El frontend es HTML/CSS/JS puro (sin Node ni build) y se sirve con **Live
+Server** de VS Code:
+
+1. Instala la extensión **Live Server** (Ritwick Dey).
+2. Abre la carpeta `frontend/` y haz clic derecho sobre `index.html` →
+   **Open with Live Server** (o el botón **Go Live** de la barra de estado).
+3. Entra a `http://localhost:5501` e inicia sesión con `medico1` /
+   `farma1`.
+
+> El puerto 5501 es el que permite el backend por defecto (`FRONTEND_ORIGINS`
+> en `.env` y en el `api-gateway` del compose). Si cambias el puerto de Live
+> Server, actualiza esa variable y vuelve a levantar el gateway.
+
+El frontend guarda el JWT en `localStorage` y manda a cada usuario a la
+pantalla de su rol; si la sesión expira (401), vuelve solo al login.
 
 ### Prueba rápida de punta a punta
 
@@ -611,6 +646,12 @@ para relaciones entidad ↔ entidad. El `@JoinColumn` define la columna foránea
   12 contenedores quedan `healthy` y los servicios arrancan en orden.
 - **CI con GitHub Actions**: tests unitarios de los 6 módulos y validación del
   `docker-compose.yml` en cada push/PR (sección 10).
+- **Frontend web** (`frontend/`): HTML + CSS + JS puro, sin frameworks ni build,
+  servido con Live Server (`:5501`). Login/registro, panel del médico (crear,
+  editar, eliminar y filtrar recetas), panel del farmacéutico (dispensar las
+  reservadas, con auto-refresco) y carga de inventario. El **CORS** se resuelve
+  en el `api-gateway` (`CorsConfig`), que es el único punto por donde entra el
+  navegador.
 - **Bug corregido en recetas**: el `CHECK` de `recetas.estado` en las bases
   existentes estaba creado con 3 estados (faltaba `SIN_STOCK`, que se agregó
   después al enum y `ddl-auto: update` nunca actualiza constraints), por lo que

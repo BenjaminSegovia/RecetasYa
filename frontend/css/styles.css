@@ -1,0 +1,428 @@
+/* RecetaYA — estilos del frontend (HTML/CSS/JS puro, sin frameworks) */
+
+:root {
+  --color-primario: #0f766e;      /* verde azulado (salud) */
+  --color-primario-oscuro: #115e59;
+  --color-primario-claro: #ccfbf1;
+  --color-fondo: #f1f5f9;
+  --color-tarjeta: #ffffff;
+  --color-texto: #0f172a;
+  --color-texto-suave: #64748b;
+  --color-borde: #e2e8f0;
+  --color-error: #b91c1c;
+  --color-error-fondo: #fee2e2;
+  --color-ok: #15803d;
+  --color-ok-fondo: #dcfce7;
+  --radio: 10px;
+  --sombra: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-primario);
+}
+
+/* --------------------------------- Header --------------------------------- */
+
+.topbar {
+  background: var(--color-tarjeta);
+  border-bottom: 1px solid var(--color-borde);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.marca {
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-texto);
+}
+
+.marca span {
+  color: var(--color-primario);
+}
+
+.topbar nav {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.topbar nav a {
+  text-decoration: none;
+  color: var(--color-texto-suave);
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+}
+
+.topbar nav a:hover {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+.topbar nav a.activo {
+  background: var(--color-primario-claro);
+  color: var(--color-primario-oscuro);
+  font-weight: 600;
+}
+
+.sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.usuario {
+  font-size: 0.9rem;
+  color: var(--color-texto-suave);
+}
+
+.usuario small {
+  background: var(--color-primario-claro);
+  color: var(--color-primario-oscuro);
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* -------------------------------- Contenido -------------------------------- */
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.titulo-pagina {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+.subtitulo {
+  margin: 0 0 1.5rem;
+  color: var(--color-texto-suave);
+  font-size: 0.95rem;
+}
+
+.rejilla {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
+}
+
+.tarjeta {
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 1.25rem;
+}
+
+.tarjeta h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.tarjeta-ancho {
+  grid-column: 1 / -1;
+}
+
+/* -------------------------------- Formularios ------------------------------- */
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--color-texto);
+}
+
+input,
+select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--color-primario-claro);
+  border-color: var(--color-primario);
+}
+
+.campo {
+  margin-bottom: 0.9rem;
+}
+
+.campo small {
+  color: var(--color-texto-suave);
+  font-weight: 400;
+}
+
+.fila {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.fila > * {
+  flex: 1;
+}
+
+.acciones-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------- Botones --------------------------------- */
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-primario);
+  color: #fff;
+}
+
+.btn:hover {
+  background: var(--color-primario-oscuro);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secundario {
+  background: #fff;
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+}
+
+.btn-secundario:hover {
+  background: var(--color-fondo);
+}
+
+.btn-peligro {
+  background: #fff;
+  color: var(--color-error);
+  border: 1px solid #fecaca;
+}
+
+.btn-peligro:hover {
+  background: var(--color-error-fondo);
+}
+
+.btn-chico {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+/* --------------------------------- Tablas ---------------------------------- */
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--color-borde);
+  vertical-align: top;
+}
+
+th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-texto-suave);
+}
+
+tbody tr:hover {
+  background: #f8fafc;
+}
+
+.vacio {
+  text-align: center;
+  color: var(--color-texto-suave);
+  padding: 1.5rem 0;
+}
+
+.acciones-tabla {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------- Badges ---------------------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-pendiente { background: #fef3c7; color: #92400e; }
+.badge-reservada { background: #dcfce7; color: #166534; }
+.badge-sinstock  { background: #fee2e2; color: #991b1b; }
+.badge-dispensada{ background: #dbeafe; color: #1e40af; }
+.badge-otro      { background: var(--color-fondo); color: var(--color-texto-suave); }
+
+/* --------------------------------- Mensajes -------------------------------- */
+
+.alerta {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  margin-bottom: 1rem;
+}
+
+.alerta-ok {
+  background: var(--color-ok-fondo);
+  color: var(--color-ok);
+  border: 1px solid #bbf7d0;
+}
+
+.alerta-error {
+  background: var(--color-error-fondo);
+  color: var(--color-error);
+  border: 1px solid #fecaca;
+}
+
+/* ---------------------------------- Login ---------------------------------- */
+
+.login-cuerpo {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(1000px 500px at 15% -10%, var(--color-primario-claro), transparent),
+    var(--color-fondo);
+}
+
+.login-tarjeta {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 1.75rem;
+}
+
+.login-marca {
+  text-align: center;
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+}
+
+.login-marca span {
+  color: var(--color-primario);
+}
+
+.login-lema {
+  text-align: center;
+  color: var(--color-texto-suave);
+  font-size: 0.92rem;
+  margin: 0 0 1.25rem;
+}
+
+.pestanas {
+  display: flex;
+  border-bottom: 1px solid var(--color-borde);
+  margin-bottom: 1.25rem;
+}
+
+.pestanas button {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  cursor: pointer;
+}
+
+.pestanas button.activa {
+  color: var(--color-primario);
+  border-bottom-color: var(--color-primario);
+}
+
+.oculto {
+  display: none;
+}
+
+.pista {
+  font-size: 0.82rem;
+  color: var(--color-texto-suave);
+  background: var(--color-fondo);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  margin-bottom: 1rem;
+}
+
+/* ------------------------- Medicamentos (receta) ---------------------------- */
+
+.tabla-medicamentos input {
+  padding: 0.4rem 0.5rem;
+}
+
+.fila-medicamento td {
+  padding: 0.35rem 0.3rem;
+}
+
+@media (max-width: 640px) {
+  .topbar-inner {
+    gap: 0.5rem;
+  }
+
+  .fila {
+    flex-direction: column;
+  }
+}

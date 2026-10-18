@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecetaYA — Iniciar sesión</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="login-cuerpo">
+  <div class="login-tarjeta">
+    <h1 class="login-marca">Receta<span>YA</span></h1>
+    <p class="login-lema">Gestión de recetas médicas para farmacias</p>
+
+    <div class="pestanas">
+      <button type="button" id="tab-login" class="activa">Iniciar sesión</button>
+      <button type="button" id="tab-registro">Crear cuenta</button>
+    </div>
+
+    <div id="mensaje" hidden></div>
+
+    <!-- ----------------------------- LOGIN ----------------------------- -->
+    <form id="form-login" novalidate>
+      <div class="campo">
+        <label for="login-username">Usuario</label>
+        <input id="login-username" name="username" autocomplete="username" required />
+      </div>
+      <div class="campo">
+        <label for="login-password">Contraseña</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+      </div>
+      <button class="btn" type="submit" style="width:100%">Entrar</button>
+    </form>
+
+    <!-- ---------------------------- REGISTRO ---------------------------- -->
+    <form id="form-registro" class="oculto" novalidate>
+      <div class="campo">
+        <label for="reg-username">Usuario</label>
+        <input id="reg-username" name="username" autocomplete="username" required />
+      </div>
+      <div class="campo">
+        <label for="reg-nombre">Nombre completo</label>
+        <input id="reg-nombre" name="nombreCompleto" placeholder="Dr. Ana Pérez" required />
+      </div>
+      <div class="campo">
+        <label for="reg-email">Email <small>(obligatorio si eres médico: por aquí llegan las notificaciones)</small></label>
+        <input id="reg-email" name="email" type="email" placeholder="doctor@correo.cl" />
+      </div>
+      <div class="campo">
+        <label for="reg-password">Contraseña</label>
+        <input id="reg-password" name="password" type="password" autocomplete="new-password" required />
+      </div>
+      <div class="campo">
+        <label for="reg-rol">Rol</label>
+        <select id="reg-rol" name="role">
+          <option value="MEDICO">Médico</option>
+          <option value="FARMACEUTICO">Farmacéutico</option>
+        </select>
+      </div>
+      <button class="btn" type="submit" style="width:100%">Crear cuenta</button>
+    </form>
+
+    <p class="pista" style="margin-top:1.25rem;margin-bottom:0">
+      Usuarios de prueba: <strong>medico1</strong> y <strong>farma1</strong>
+      (contraseña la del <code>SEED_PASSWORD</code> de tu <code>.env</code>).
+    </p>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
