@@ -35,6 +35,10 @@ para que cada parte del sistema evolucione de forma independiente.
 | Orquestación | Docker Compose |
 | Build | Maven (wrapper `mvnw`) |
 | Mapeo | Lombok |
+| Salud / monitoreo | Spring Boot Actuator (`GET /actuator/health`) + `healthcheck` en Docker Compose |
+| CI | GitHub Actions (`.github/workflows/ci.yml`): tests por servicio + validación del compose |
+| Frontend | HTML + CSS + JavaScript puro (sin frameworks ni build) en `frontend/`, servido con Live Server (`:5501`) |
+| CORS | Resuelto en `api-gateway` (`CorsConfig`): orígenes permitidos desde `FRONTEND_ORIGINS` |
 
 ---
 
@@ -235,7 +239,25 @@ Ejemplo: `/api/auth/login` llega a auth-service como `/auth/login`.
 | `/api/recetas/**` | `receta-service` (`:8082`) |
 | `/api/inventario/**` | `inventory-service` (`:8083`) |
 | `/api/dispensaciones/**` | `dispensing-service` (`:8084`) |
-| `/api/notificaciones/**` | `notification-service` (`:8085`) |
+
+> No hay ruta `/api/notificaciones/**`: `notification-service` es un worker sin
+> endpoints REST (solo consume `notificacion-queue`), por lo que enrutarlo al
+> gateway produciría siempre 404.
+
+El gateway también resuelve el **CORS** del frontend (`config/CorsConfig`, un
+`CorsFilter` de Spring MVC): el frontend corre en `http://localhost:5501` (Live
+Server) y la API en `http://localhost:8080`, así que el navegador exige CORS en
+cada llamada. Spring Cloud Gateway (variante webmvc) no trae soporte propio y el
+preflight `OPTIONS` **no llega a los microservicios** (lo responde el gateway),
+por eso se configura aquí y no en cada servicio. Los orígenes salen de
+`FRONTEND_ORIGINS` (por defecto `http://localhost:5501` y `http://127.0.0.1:5501`).
+
+| Frontend | Qué hay |
+|---|---|
+| `frontend/index.html` | Login y registro (con selector de rol; pide email obligatorio si el rol es médico) |
+| `frontend/medico.html` | Crear recetas (una o varias), listarlas con filtro por estado, editar y eliminar |
+| `frontend/farmaceutico.html` | Recetas reservadas (con botón **Dispensar**) y todas las recetas en solo lectura |
+| `frontend/inventario.html` | Carga, edición y eliminación de stock por medicamento y sucursal |
 
 ### auth-service — `:8081`
 
@@ -296,6 +318,17 @@ Canales de salida:
   `http://localhost:8025` sin salir a internet.
 - **En producción**: configurar `MAIL_HOST` / `MAIL_PORT` (y credenciales) hacia un
   SMTP real.
+
+### Actuator — presente en todos los servicios
+
+Cada servicio (incluido el gateway) expone estos endpoints **sin JWT**, porque
+los consume el `healthcheck` de Docker Compose (se accede al puerto de cada
+servicio, no a través del gateway):
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/actuator/health` | Estado real del servicio: devuelve `{"status":"UP"}` solo si la app **y** su base de datos responden |
+| GET | `/actuator/info` | Información básica de la aplicación |
 
 ---
 
@@ -366,12 +399,41 @@ Las dos colas SQS (`reserva-stock-queue` y `notificacion-queue`) se crean
 Si ejecutas `docker compose down -v` se borran los volúmenes, pero al volver
 a levantar se recrean solas.
 
+El arranque es **por etapas**: las 4 bases de datos, LocalStack y Mailpit
+tienen `healthcheck`, y los servicios usan `depends_on: condition:
+service_healthy`, así que cada servicio arranca **cuando su infraestructura ya
+acepta conexiones** (antes dependía de los reintentos de `restart:
+unless-stopped`). Para ver el estado:
+
+```bash
+docker compose ps                        # las 12 filas deben quedar "healthy"
+curl http://localhost:8081/actuator/health   # {"status":"UP"}
+```
+
 Para correr un servicio en local (fuera de Docker):
 
 ```bash
 cd receta-service
 ./mvnw spring-boot:run     # en Windows: mvnw.cmd spring-boot:run
 ```
+
+### 4. Levantar el frontend
+
+El frontend es HTML/CSS/JS puro (sin Node ni build) y se sirve con **Live
+Server** de VS Code:
+
+1. Instala la extensión **Live Server** (Ritwick Dey).
+2. Abre la carpeta `frontend/` y haz clic derecho sobre `index.html` →
+   **Open with Live Server** (o el botón **Go Live** de la barra de estado).
+3. Entra a `http://localhost:5501` e inicia sesión con `medico1` /
+   `farma1`.
+
+> El puerto 5501 es el que permite el backend por defecto (`FRONTEND_ORIGINS`
+> en `.env` y en el `api-gateway` del compose). Si cambias el puerto de Live
+> Server, actualiza esa variable y vuelve a levantar el gateway.
+
+El frontend guarda el JWT en `localStorage` y manda a cada usuario a la
+pantalla de su rol; si la sesión expira (401), vuelve solo al login.
 
 ### Prueba rápida de punta a punta
 
@@ -475,16 +537,39 @@ main
 develop
 feature/receta-crud
 feature/receta-manejo-errores
+feature/doc-resumen-gateway          (integrada en develop)
+feature/manejador-errores            (integrada en develop)
+feature/healthchecks-actuator        (integrada en develop)
+feature/ci-github-actions            (integrada en develop)
+feature/doc-actualizacion            (esta documentación)
 ```
+
+> Las ramas ya integradas se pueden borrar (`git branch -d <rama>` y
+> eliminarlas de GitHub) para no dejar basura.
 
 Flujo básico:
 
 ```bash
-git checkout develop            # trabajar sobre la rama de integración
+git checkout develop            # partir de la rama de integración
 git checkout -b feature/x       # crear una rama de feature nueva
 git push -u origin feature/x    # publicarla en GitHub
 git checkout develop            # integrar (merge o PR)
 ```
+
+### Integración continua (GitHub Actions)
+
+`.github/workflows/ci.yml` se ejecuta en cada **push a `main`/`develop`** y en
+cada **Pull Request**:
+
+| Job | Qué hace |
+|---|---|
+| `tests` | `mvn -Dtest='*Test' test` en los 6 módulos, **en paralelo** (`fail-fast: false`, así ves todos los fallos de una) |
+| `compose` | Valida `docker-compose.yml` contra `.env.example`: si alguien agrega una variable al compose sin documentarla en la plantilla, el CI falla |
+
+> El job de tests corre **solo los tests unitarios** (`*Test`): los
+> `*ApplicationTests` (con `contextLoads`) necesitan las 4 bases de datos,
+> LocalStack y Mailpit, que en CI no existen. Para correrlos haría falta
+> Testcontainers (ver pendiente 2 de la sección 12).
 
 ---
 
@@ -546,11 +631,49 @@ para relaciones entidad ↔ entidad. El `@JoinColumn` define la columna foránea
   (`INTERNAL_API_KEY`); los servicios clientes la envían.
 - **Datos semilla** con perfil `seed`: `medico1` (con email) y `farma1` en
   auth-service (contraseña desde `SEED_PASSWORD`); stock de prueba en
-  inventory-service.
-- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 29 tests de la
-  lógica de negocio.
+  inventory-service. El seed además **completa el `email` si un usuario
+  existente quedó sin él** (usuarios creados antes de que existiera el campo
+  no recibían notificaciones) y avisa en el arranque con un `WARN` si queda
+  algún usuario sin email.
+- **Manejo de errores centralizado en los 4 servicios REST**: `receta-service`,
+  `auth-service`, `inventory-service` y `dispensing-service` comparten el mismo
+  `GlobalExceptionHandler` + `ErrorResponse` (`timestamp`, `status`, `error`,
+  `message`, `path`, `fieldErrors`), en lugar del error por defecto de Spring.
+  `dispensing-service` además traduce los errores que llegan de `receta-service`
+  (404 si la receta no existe, 502 si ese servicio falla).
+- **Salud verificable**: Actuator en los 6 módulos (`/actuator/health`) y
+  `healthcheck` + `depends_on: condition: service_healthy` en el compose; las
+  12 contenedores quedan `healthy` y los servicios arrancan en orden.
+- **CI con GitHub Actions**: tests unitarios de los 6 módulos y validación del
+  `docker-compose.yml` en cada push/PR (sección 10).
+- **Frontend web** (`frontend/`): HTML + CSS + JS puro, sin frameworks ni build,
+  servido con Live Server (`:5501`). Login/registro, panel del médico (crear,
+  editar, eliminar y filtrar recetas), panel del farmacéutico (dispensar las
+  reservadas, con auto-refresco) y carga de inventario. El **CORS** se resuelve
+  en el `api-gateway` (`CorsConfig`), que es el único punto por donde entra el
+  navegador.
+- **Bug corregido en recetas**: el `CHECK` de `recetas.estado` en las bases
+  existentes estaba creado con 3 estados (faltaba `SIN_STOCK`, que se agregó
+  después al enum y `ddl-auto: update` nunca actualiza constraints), por lo que
+  una receta sin stock devolvía **500** en vez de quedar `SIN_STOCK`.
+  `EstadoRecetaConstraintMigration` (receta-service) recrea el constraint con
+  los estados del enum en cada arranque; es idempotente y no toca datos.
+- **Tests unitarios** (JUnit 5 + Mockito) en los 5 servicios: 35 tests de la
+  lógica de negocio (más los 5 `contextLoads`, que necesitan infraestructura).
 - 5 servicios + gateway + Mailpit contenedorizados con `docker compose up --build`.
 
 **Pendiente / puntos a mejorar:**
 
-1. **No hay frontend.** Hoy todo se consume vía API REST.
+1. **Sin tests de integración en CI.** Los `*ApplicationTests` no corren porque
+   necesitan infraestructura; falta **Testcontainers** (PostgreSQL + LocalStack)
+   para poder ejecutarlos dentro del pipeline.
+2. **Resiliencia en SQS.** No hay DLQ ni reintentos configurados en
+   `ReservaStockListener`, ni **idempotencia**: un mensaje entregado dos veces
+   podría descontar stock dos veces.
+3. **Sin paginación** en `GET /recetas` e `GET /inventario`: con datos reales
+   las respuestas crecerán sin límite.
+4. **Sin `README.md` en la raíz** (GitHub solo muestra `RESUMEN_PROYECTO.md`
+   si lo renombras) **ni documentación OpenAPI/Swagger** (springdoc) para
+   probar la API desde el navegador.
+5. **`api-gateway` no tiene wrapper `mvnw` propio**: se usa el de otro servicio
+   con `-f ../api-gateway/pom.xml` (sección 9).

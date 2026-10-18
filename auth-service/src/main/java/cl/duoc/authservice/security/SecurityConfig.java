@@ -30,6 +30,9 @@ public class SecurityConfig {
                         // Endpoints internos: protegidos con X-Internal-Api-Key
                         // (los consume notification-service).
                         .requestMatchers("/internal/**").permitAll()
+                        // Actuator: el healthcheck de Docker necesita consultar
+                        // /actuator/health sin token.
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // El filtro corre antes de la autorización: si no llega la

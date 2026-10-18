@@ -1,0 +1,66 @@
+# Pipeline de integración continua.
+#
+# Corre en cada push a main/develop y en cada Pull Request:
+#   1. tests  - `mvn test` en los 6 módulos (en paralelo).
+#   2. compose - valida que docker-compose.yml + .env.example sean coherentes.
+#
+# Se usan los tests unitarios (`*Test`) y NO los de arranque
+# (`*ApplicationTests`, con contextLoads): esos necesitan las 4 bases de
+# datos, LocalStack y Mailpit levantados, que en CI no están.
+# Si algún día se quieren correr, hay que agregar Testcontainers.
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests - ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Que falle un servicio no detenga los demás: así ves todo el daño de una.
+      fail-fast: false
+      matrix:
+        service:
+          - auth-service
+          - receta-service
+          - inventory-service
+          - dispensing-service
+          - notification-service
+          - api-gateway
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configurar Java 21 (con caché de Maven)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Compilar y correr tests unitarios
+        run: >
+          mvn -B
+          -f ${{ matrix.service }}/pom.xml
+          -Dtest='*Test'
+          -DfailIfNoTests=false
+          -Dsurefire.failIfNoSpecifiedTests=false
+          test
+
+  compose:
+    name: Validar docker-compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # No existe el .env (está en .gitignore), se valida contra la plantilla:
+      # si un dia se agrega una variable al compose sin agregarla a
+      # .env.example, este paso falla.
+      - name: docker compose config
+        run: docker compose --env-file .env.example config --quiet

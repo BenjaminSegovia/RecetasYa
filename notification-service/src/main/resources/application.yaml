@@ -34,3 +34,12 @@ internal:
 # Remitente de los emails de notificación.
 notification:
   from: ${NOTIFICATION_FROM:notificaciones@recetasya.cl}
+
+
+# Actuator: /actuator/health expone el estado real del servicio (BD, disco, etc.).
+# Es lo que consulta el healthcheck del docker-compose para saber si está vivo.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

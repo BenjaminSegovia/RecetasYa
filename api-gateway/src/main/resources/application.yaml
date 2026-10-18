@@ -43,9 +43,14 @@ spring:
               filters:
                 - StripPrefix=1
 
-            - id: notification-service
-              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
-              predicates:
-                - Path=/api/notificaciones/**
-              filters:
-                - StripPrefix=1
+            # No hay ruta para notification-service: es un worker sin endpoints
+            # REST (solo consume notificacion-queue por SQS), así que enrutarlo
+            # aquí produciría siempre 404.
+
+# Actuator: /actuator/health expone el estado real del servicio (BD, disco, etc.).
+# Es lo que consulta el healthcheck del docker-compose para saber si está vivo.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
